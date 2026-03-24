@@ -17,6 +17,8 @@ interface CheckpointDiffQueryInput {
 
 export const providerQueryKeys = {
   all: ["providers"] as const,
+  skills: (threadId: ThreadId | null, hasActiveSession: boolean) =>
+    ["providers", "skills", threadId, hasActiveSession] as const,
   checkpointDiff: (input: CheckpointDiffQueryInput) =>
     [
       "providers",
@@ -87,6 +89,83 @@ function isCheckpointTemporarilyUnavailable(error: unknown): boolean {
     message.includes("checkpoint is unavailable for turn") ||
     message.includes("filesystem checkpoint is unavailable")
   );
+}
+
+// ── Provider Skills Cache ────────────────────────────────────────────
+// Skills are cached per-project (cwd) in localStorage so they show
+// immediately in the slash-command menu even before a session starts.
+
+const SKILLS_CACHE_KEY_PREFIX = "t3:provider-skills:";
+const SKILLS_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface CachedSkills {
+  skills: Array<{ name: string; description: string; argumentHint: string }>;
+  cachedAt: number;
+}
+
+function readSkillsCache(cwd: string | null): CachedSkills | null {
+  if (!cwd) return null;
+  try {
+    const raw = localStorage.getItem(SKILLS_CACHE_KEY_PREFIX + cwd);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedSkills;
+    if (Date.now() - parsed.cachedAt > SKILLS_CACHE_MAX_AGE_MS) {
+      localStorage.removeItem(SKILLS_CACHE_KEY_PREFIX + cwd);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeSkillsCache(
+  cwd: string | null,
+  skills: Array<{ name: string; description: string; argumentHint: string }>,
+): void {
+  if (!cwd || skills.length === 0) return;
+  try {
+    localStorage.setItem(
+      SKILLS_CACHE_KEY_PREFIX + cwd,
+      JSON.stringify({ skills, cachedAt: Date.now() } satisfies CachedSkills),
+    );
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function providerSkillsQueryOptions(input: {
+  threadId: ThreadId | null;
+  cwd: string | null;
+  hasActiveSession: boolean;
+  enabled?: boolean;
+}) {
+  const cached = readSkillsCache(input.cwd);
+
+  type SkillsData = { skills: Array<{ name: string; description: string; argumentHint: string }> };
+
+  return queryOptions({
+    queryKey: providerQueryKeys.skills(input.threadId, input.hasActiveSession),
+    queryFn: async (): Promise<SkillsData> => {
+      const api = ensureNativeApi();
+      if (!input.threadId) {
+        return { skills: [...(cached?.skills ?? [])] };
+      }
+      try {
+        const result = await api.provider.getSkills({ threadId: input.threadId });
+        const skills = [...result.skills];
+        if (skills.length > 0) {
+          writeSkillsCache(input.cwd, skills);
+        }
+        return { skills };
+      } catch {
+        return { skills: [...(cached?.skills ?? [])] };
+      }
+    },
+    // Enable even without a threadId if we have cached data to show
+    enabled: (input.enabled ?? true) && (!!input.threadId || cached !== null),
+    staleTime: 60_000,
+  });
 }
 
 export function checkpointDiffQueryOptions(input: CheckpointDiffQueryInput) {

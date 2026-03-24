@@ -178,3 +178,78 @@ export function resolveProjectStatusIndicator(
 
   return highestPriorityStatus;
 }
+
+/** Status group labels ordered by display priority (highest first). */
+const STATUS_GROUP_ORDER: ReadonlyArray<ThreadStatusPill["label"]> = [
+  "Pending Approval",
+  "Awaiting Input",
+  "Working",
+  "Connecting",
+  "Plan Ready",
+  "Completed",
+];
+
+const STATUS_GROUP_COLOR: Record<ThreadStatusPill["label"], string> = {
+  "Pending Approval": "text-amber-600 dark:text-amber-300/90",
+  "Awaiting Input": "text-indigo-600 dark:text-indigo-300/90",
+  Working: "text-sky-600 dark:text-sky-300/80",
+  Connecting: "text-sky-600 dark:text-sky-300/80",
+  "Plan Ready": "text-violet-600 dark:text-violet-300/90",
+  Completed: "text-emerald-600 dark:text-emerald-300/90",
+};
+
+export interface ThreadStatusGroup<T> {
+  label: ThreadStatusPill["label"] | null;
+  displayLabel: string;
+  colorClass: string;
+  threads: T[];
+}
+
+/**
+ * Groups threads by their resolved status pill.
+ * Returns groups ordered by status priority (highest first), with a final
+ * group for threads that have no active status.
+ */
+export function groupThreadsByStatus<T>(
+  threads: readonly T[],
+  getStatus: (thread: T) => ThreadStatusPill | null,
+): ThreadStatusGroup<T>[] {
+  const buckets = new Map<ThreadStatusPill["label"] | null, T[]>();
+
+  for (const thread of threads) {
+    const status = getStatus(thread);
+    const key = status?.label ?? null;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = [];
+      buckets.set(key, bucket);
+    }
+    bucket.push(thread);
+  }
+
+  const groups: ThreadStatusGroup<T>[] = [];
+
+  for (const label of STATUS_GROUP_ORDER) {
+    const bucket = buckets.get(label);
+    if (bucket && bucket.length > 0) {
+      groups.push({
+        label,
+        displayLabel: label,
+        colorClass: STATUS_GROUP_COLOR[label],
+        threads: bucket,
+      });
+    }
+  }
+
+  const noStatus = buckets.get(null);
+  if (noStatus && noStatus.length > 0) {
+    groups.push({
+      label: null,
+      displayLabel: "Other",
+      colorClass: "text-muted-foreground/50",
+      threads: noStatus,
+    });
+  }
+
+  return groups;
+}

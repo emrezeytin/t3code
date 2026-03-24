@@ -883,14 +883,18 @@ const make = Effect.gen(function* () {
           case "turn.started":
             return !conflictsWithActiveTurn;
           case "turn.completed":
-            if (conflictsWithActiveTurn || missingTurnForActiveTurn) {
+            // A different turn completed while another is tracked as active —
+            // keep the guard to avoid prematurely clearing the active turn.
+            if (conflictsWithActiveTurn) {
               return false;
             }
-            // Only the active turn may close the lifecycle state.
+            // When the event omits a turn ID but we have an active turn,
+            // allow the completion through — the active turn is the most
+            // likely source and blocking it leaves the session stuck at
+            // "running" indefinitely.
             if (activeTurnId !== null && eventTurnId !== undefined) {
               return sameId(activeTurnId, eventTurnId);
             }
-            // If no active turn is tracked, accept completion scoped to this thread.
             return true;
           default:
             return true;

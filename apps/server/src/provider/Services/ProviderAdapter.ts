@@ -11,6 +11,7 @@ import type {
   ApprovalRequestId,
   ProviderApprovalDecision,
   ProviderKind,
+  ProviderSkill,
   ProviderUserInputAnswers,
   ProviderRuntimeEvent,
   ProviderSendTurnInput,
@@ -113,6 +114,11 @@ export interface ProviderAdapterShape<TError> {
     threadId: ThreadId,
     numTurns: number,
   ) => Effect.Effect<ProviderThreadSnapshot, TError>;
+
+  /**
+   * Get available skills (slash commands) for an active session.
+   */
+  readonly getSkills: (threadId: ThreadId) => Effect.Effect<ReadonlyArray<ProviderSkill>, TError>;
 
   /**
    * Stop all sessions owned by this adapter.

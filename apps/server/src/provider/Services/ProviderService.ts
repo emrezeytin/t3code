@@ -20,6 +20,7 @@ import type {
   ProviderSendTurnInput,
   ProviderSession,
   ProviderSessionStartInput,
+  ProviderSkill,
   ProviderStopSessionInput,
   ThreadId,
   ProviderTurnStartResult,
@@ -90,6 +91,13 @@ export interface ProviderServiceShape {
   readonly getCapabilities: (
     provider: ProviderKind,
   ) => Effect.Effect<ProviderAdapterCapabilities, ProviderServiceError>;
+
+  /**
+   * Get available skills (slash commands) for an active session.
+   */
+  readonly getSkills: (
+    threadId: ThreadId,
+  ) => Effect.Effect<ReadonlyArray<ProviderSkill>, ProviderServiceError>;
 
   /**
    * Roll back provider conversation state by a number of turns.

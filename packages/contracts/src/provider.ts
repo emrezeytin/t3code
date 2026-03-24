@@ -125,3 +125,22 @@ export const ProviderEvent = Schema.Struct({
   payload: Schema.optional(Schema.Unknown),
 });
 export type ProviderEvent = typeof ProviderEvent.Type;
+
+// ── Provider Skills ─────────────────────────────────────────────────
+
+export const ProviderSkill = Schema.Struct({
+  name: TrimmedNonEmptyString,
+  description: Schema.String,
+  argumentHint: Schema.String,
+});
+export type ProviderSkill = typeof ProviderSkill.Type;
+
+export const ProviderGetSkillsInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type ProviderGetSkillsInput = typeof ProviderGetSkillsInput.Type;
+
+export const ProviderGetSkillsResult = Schema.Struct({
+  skills: Schema.Array(ProviderSkill),
+});
+export type ProviderGetSkillsResult = typeof ProviderGetSkillsResult.Type;

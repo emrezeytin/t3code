@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  groupThreadsByStatus,
   hasUnseenCompletion,
   resolveProjectStatusIndicator,
   resolveSidebarNewThreadEnvMode,
   resolveThreadRowClassName,
   resolveThreadStatusPill,
   shouldClearThreadSelectionOnMouseDown,
+  type ThreadStatusPill,
 } from "./Sidebar.logic";
 
 function makeLatestTurn(overrides?: {
@@ -279,5 +281,67 @@ describe("resolveProjectStatusIndicator", () => {
         },
       ]),
     ).toMatchObject({ label: "Plan Ready", dotClass: "bg-violet-500" });
+  });
+});
+
+describe("groupThreadsByStatus", () => {
+  const makePill = (label: ThreadStatusPill["label"]): ThreadStatusPill => ({
+    label,
+    colorClass: "",
+    dotClass: "",
+    pulse: false,
+  });
+
+  it("returns an empty array when there are no threads", () => {
+    expect(groupThreadsByStatus([], () => null)).toEqual([]);
+  });
+
+  it("groups threads by their status label", () => {
+    const threads = [
+      { id: "a", status: makePill("Working") },
+      { id: "b", status: null },
+      { id: "c", status: makePill("Working") },
+      { id: "d", status: makePill("Completed") },
+    ];
+    const groups = groupThreadsByStatus(threads, (t) => t.status);
+    expect(groups).toHaveLength(3);
+    expect(groups[0]).toMatchObject({ displayLabel: "Working" });
+    expect(groups[0]!.threads.map((t) => t.id)).toEqual(["a", "c"]);
+    expect(groups[1]).toMatchObject({ displayLabel: "Completed" });
+    expect(groups[1]!.threads.map((t) => t.id)).toEqual(["d"]);
+    expect(groups[2]).toMatchObject({ displayLabel: "Other" });
+    expect(groups[2]!.threads.map((t) => t.id)).toEqual(["b"]);
+  });
+
+  it("orders groups by status priority (highest first)", () => {
+    const threads = [
+      { id: "a", status: makePill("Completed") },
+      { id: "b", status: makePill("Pending Approval") },
+      { id: "c", status: makePill("Working") },
+    ];
+    const groups = groupThreadsByStatus(threads, (t) => t.status);
+    expect(groups.map((g) => g.displayLabel)).toEqual([
+      "Pending Approval",
+      "Working",
+      "Completed",
+    ]);
+  });
+
+  it("puts threads without a status into the 'Other' group at the end", () => {
+    const threads = [
+      { id: "a", status: null },
+      { id: "b", status: makePill("Completed") },
+    ];
+    const groups = groupThreadsByStatus(threads, (t) => t.status);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]!.displayLabel).toBe("Completed");
+    expect(groups[1]!.displayLabel).toBe("Other");
+  });
+
+  it("omits groups with zero threads", () => {
+    const threads = [{ id: "a", status: null }];
+    const groups = groupThreadsByStatus(threads, (t) => t.status);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.displayLabel).toBe("Other");
   });
 });

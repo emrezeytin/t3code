@@ -446,7 +446,7 @@ function SettingsRouteView() {
             <SettingsSection title="General">
               <SettingsRow
                 title="Theme"
-                description="Choose how T3 Code looks across the app."
+                description="Choose how EZ Code looks across the app."
                 resetAction={
                   theme !== "system" ? (
                     <SettingResetButton label="theme" onClick={() => setTheme("system")} />
@@ -615,6 +615,34 @@ function SettingsRouteView() {
                       })
                     }
                     aria-label="Confirm thread deletion"
+                  />
+                }
+              />
+
+              <SettingsRow
+                title="Group threads by status"
+                description="Group sidebar threads by their current status (Working, Completed, etc.)."
+                resetAction={
+                  settings.groupThreadsByStatus !== defaults.groupThreadsByStatus ? (
+                    <SettingResetButton
+                      label="group threads by status"
+                      onClick={() =>
+                        updateSettings({
+                          groupThreadsByStatus: defaults.groupThreadsByStatus,
+                        })
+                      }
+                    />
+                  ) : null
+                }
+                control={
+                  <Switch
+                    checked={settings.groupThreadsByStatus}
+                    onCheckedChange={(checked) =>
+                      updateSettings({
+                        groupThreadsByStatus: Boolean(checked),
+                      })
+                    }
+                    aria-label="Group threads by status"
                   />
                 }
               />
