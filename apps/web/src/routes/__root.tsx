@@ -313,10 +313,22 @@ function EventRouter() {
       void queryClient.invalidateQueries({ queryKey: serverQueryKeys.config() });
     });
     subscribed = true;
+
+    // Safety-net: periodically re-sync state so that any events lost during
+    // a brief WebSocket disconnect (or blocked by the backend lifecycle guard)
+    // don't leave the UI stuck in a stale "running" state forever.
+    const STALE_SYNC_INTERVAL_MS = 30_000;
+    const staleSyncTimer = setInterval(() => {
+      if (!disposed) {
+        void syncSnapshot();
+      }
+    }, STALE_SYNC_INTERVAL_MS);
+
     return () => {
       disposed = true;
       needsProviderInvalidation = false;
       domainEventFlushThrottler.cancel();
+      clearInterval(staleSyncTimer);
       unsubDomainEvent();
       unsubTerminalEvent();
       unsubWelcome();

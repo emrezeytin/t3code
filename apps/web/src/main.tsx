@@ -10,6 +10,11 @@ import { isElectron } from "./env";
 import { getRouter } from "./router";
 import { APP_DISPLAY_NAME } from "./branding";
 
+// Tag the document root so CSS can target Electron-specific styles (e.g. vibrancy transparency).
+if (isElectron) {
+  document.documentElement.classList.add("electron");
+}
+
 // Electron loads the app from a file-backed shell, so hash history avoids path resolution issues.
 const history = isElectron ? createHashHistory() : createBrowserHistory();
 

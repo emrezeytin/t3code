@@ -1534,6 +1534,8 @@ const makeCodexAdapter = (options?: CodexAdapterLiveOptions) =>
     const hasSession: CodexAdapterShape["hasSession"] = (threadId) =>
       Effect.sync(() => manager.hasSession(threadId));
 
+    const getSkills: CodexAdapterShape["getSkills"] = () => Effect.succeed([]);
+
     const stopAll: CodexAdapterShape["stopAll"] = () =>
       Effect.sync(() => {
         manager.stopAll();
@@ -1594,6 +1596,7 @@ const makeCodexAdapter = (options?: CodexAdapterLiveOptions) =>
       stopSession,
       listSessions,
       hasSession,
+      getSkills,
       stopAll,
       streamEvents: Stream.fromQueue(runtimeEventQueue),
     } satisfies CodexAdapterShape;

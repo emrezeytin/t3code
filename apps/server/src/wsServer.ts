@@ -610,6 +610,7 @@ export const createServer = Effect.fn(function* (): Effect.fn.Return<
   const projectionReadModelQuery = yield* ProjectionSnapshotQuery;
   const checkpointDiffQuery = yield* CheckpointDiffQuery;
   const orchestrationReactor = yield* OrchestrationReactor;
+  const providerService = yield* ProviderService;
   const { openInEditor } = yield* Open;
 
   const subscriptionsScope = yield* Scope.make("sequential");
@@ -803,6 +804,14 @@ export const createServer = Effect.fn(function* (): Effect.fn.Return<
           ),
         );
         return { relativePath: target.relativePath };
+      }
+
+      case WS_METHODS.providerGetSkills: {
+        const body = stripRequestTag(request.body);
+        const skills = yield* providerService.getSkills(body.threadId).pipe(
+          Effect.catch(() => Effect.succeed([] as const)),
+        );
+        return { skills };
       }
 
       case WS_METHODS.shellOpenInEditor: {

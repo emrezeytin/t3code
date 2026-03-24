@@ -169,6 +169,7 @@ interface ClaudeQueryRuntime extends AsyncIterable<SDKMessage> {
   readonly setModel: (model?: string) => Promise<void>;
   readonly setPermissionMode: (mode: PermissionMode) => Promise<void>;
   readonly setMaxThinkingTokens: (maxThinkingTokens: number | null) => Promise<void>;
+  readonly supportedCommands: () => Promise<Array<{ name: string; description: string; argumentHint: string }>>;
   readonly close: () => void;
 }
 
@@ -3053,6 +3054,18 @@ function makeClaudeAdapter(options?: ClaudeAdapterLiveOptions) {
         return context !== undefined && !context.stopped;
       });
 
+    const getSkills: ClaudeAdapterShape["getSkills"] = (threadId) =>
+      Effect.gen(function* () {
+        const context = sessions.get(threadId);
+        if (!context || context.stopped) {
+          return [] as const;
+        }
+        const result = yield* Effect.tryPromise(() => context.query.supportedCommands()).pipe(
+          Effect.catch(() => Effect.succeed([] as const)),
+        );
+        return result;
+      });
+
     const stopAll: ClaudeAdapterShape["stopAll"] = () =>
       Effect.forEach(
         sessions,
@@ -3089,6 +3102,7 @@ function makeClaudeAdapter(options?: ClaudeAdapterLiveOptions) {
       stopSession,
       listSessions,
       hasSession,
+      getSkills,
       stopAll,
       streamEvents: Stream.fromQueue(runtimeEventQueue),
     } satisfies ClaudeAdapterShape;

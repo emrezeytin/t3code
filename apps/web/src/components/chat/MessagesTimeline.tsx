@@ -250,7 +250,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     estimateSize: (index: number) => {
       const row = rows[index];
       if (!row) return 96;
-      if (row.kind === "work") return 112;
+      if (row.kind === "work") {
+        return estimateTimelineWorkRowHeight(row, expandedWorkGroups);
+      }
       if (row.kind === "proposed-plan") return estimateTimelineProposedPlanHeight(row.proposedPlan);
       if (row.kind === "working") return 40;
       return estimateTimelineMessageHeight(row.message, { timelineWidthPx });
@@ -263,6 +265,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     if (timelineWidthPx === null) return;
     rowVirtualizer.measure();
   }, [rowVirtualizer, timelineWidthPx]);
+  useEffect(() => {
+    rowVirtualizer.measure();
+  }, [rowVirtualizer, expandedWorkGroups]);
   useEffect(() => {
     rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
       const viewportHeight = instance.scrollRect?.height ?? 0;
@@ -624,6 +629,33 @@ type TimelineRow =
     }
   | { kind: "working"; id: string; createdAt: string | null };
 
+function estimateTimelineWorkRowHeight(
+  row: Extract<TimelineRow, { kind: "work" }>,
+  expandedWorkGroups: Record<string, boolean>,
+): number {
+  const { groupedEntries } = row;
+  const isExpanded = expandedWorkGroups[row.id] ?? false;
+  const hasOverflow = groupedEntries.length > MAX_VISIBLE_WORK_LOG_ENTRIES;
+  const visibleCount =
+    hasOverflow && !isExpanded ? MAX_VISIBLE_WORK_LOG_ENTRIES : groupedEntries.length;
+  const onlyToolEntries = groupedEntries.every((entry) => entry.tone === "tool");
+  const showHeader = hasOverflow || !onlyToolEntries;
+  // Each entry ≈ 28px (py-1 + icon height), gap ≈ 2px, container py-1.5 = 12px,
+  // header ≈ 26px (when shown), outer pb-4 = 16px
+  const ENTRY_HEIGHT = 28;
+  const GAP = 2;
+  const CONTAINER_PADDING = 12;
+  const HEADER_HEIGHT = showHeader ? 26 : 0;
+  const OUTER_PADDING = 16;
+  return (
+    CONTAINER_PADDING +
+    HEADER_HEIGHT +
+    visibleCount * ENTRY_HEIGHT +
+    Math.max(0, visibleCount - 1) * GAP +
+    OUTER_PADDING
+  );
+}
+
 function estimateTimelineProposedPlanHeight(proposedPlan: TimelineProposedPlan): number {
   const estimatedLines = Math.max(1, Math.ceil(proposedPlan.planMarkdown.length / 72));
   return 120 + Math.min(estimatedLines * 22, 880);
@@ -720,7 +752,7 @@ const UserMessageBody = memo(function UserMessageBody(props: {
         }
 
         return (
-          <div className="wrap-break-word whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground">
+          <div className="wrap-break-word whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
             {inlineNodes}
           </div>
         );
@@ -748,7 +780,7 @@ const UserMessageBody = memo(function UserMessageBody(props: {
     }
 
     return (
-      <div className="wrap-break-word whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground">
+      <div className="wrap-break-word whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
         {inlineNodes}
       </div>
     );
@@ -759,9 +791,9 @@ const UserMessageBody = memo(function UserMessageBody(props: {
   }
 
   return (
-    <pre className="whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed text-foreground">
+    <p className="whitespace-pre-wrap wrap-break-word font-sans text-sm leading-relaxed text-foreground">
       {props.text}
-    </pre>
+    </p>
   );
 });
 

@@ -25,6 +25,7 @@ import type {
   ProjectWriteFileInput,
   ProjectWriteFileResult,
 } from "./project";
+import type { ProviderGetSkillsInput, ProviderGetSkillsResult } from "./provider";
 import type {
   ServerConfig,
   ServerProviderUpdatedPayload,
@@ -162,6 +163,9 @@ export interface NativeApi {
       items: readonly ContextMenuItem<T>[],
       position?: { x: number; y: number },
     ) => Promise<T | null>;
+  };
+  provider: {
+    getSkills: (input: ProviderGetSkillsInput) => Promise<ProviderGetSkillsResult>;
   };
   server: {
     getConfig: () => Promise<ServerConfig>;
