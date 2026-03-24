@@ -6,8 +6,10 @@ import { useEffect } from "react";
 import ThreadSidebar from "../components/Sidebar";
 import { useHandleNewThread } from "../hooks/useHandleNewThread";
 import { isTerminalFocused } from "../lib/terminalFocus";
+import { isMacPlatform } from "../lib/utils";
 import { serverConfigQueryOptions } from "../lib/serverReactQuery";
 import { resolveShortcutCommand } from "../keybindings";
+import { useStore } from "../store";
 import { selectThreadTerminalState, useTerminalStateStore } from "../terminalStateStore";
 import { useThreadSelectionStore } from "../threadSelectionStore";
 import { resolveSidebarNewThreadEnvMode } from "~/components/Sidebar.logic";
@@ -19,11 +21,17 @@ const THREAD_SIDEBAR_WIDTH_STORAGE_KEY = "chat_thread_sidebar_width";
 const THREAD_SIDEBAR_MIN_WIDTH = 13 * 16;
 const THREAD_MAIN_CONTENT_MIN_WIDTH = 40 * 16;
 
+function isModKeyPressed(event: KeyboardEvent): boolean {
+  return isMacPlatform(navigator.platform) ? event.metaKey : event.ctrlKey;
+}
+
 function ChatRouteGlobalShortcuts() {
+  const navigate = useNavigate();
   const clearSelection = useThreadSelectionStore((state) => state.clearSelection);
   const selectedThreadIdsSize = useThreadSelectionStore((state) => state.selectedThreadIds.size);
   const { activeDraftThread, activeThread, handleNewThread, projects, routeThreadId } =
     useHandleNewThread();
+  const threads = useStore((store) => store.threads);
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
   const keybindings = serverConfigQuery.data?.keybindings ?? EMPTY_KEYBINDINGS;
   const terminalOpen = useTerminalStateStore((state) =>
@@ -40,6 +48,40 @@ function ChatRouteGlobalShortcuts() {
       if (event.key === "Escape" && selectedThreadIdsSize > 0) {
         event.preventDefault();
         clearSelection();
+        return;
+      }
+
+      // mod+1 through mod+9: navigate to nth thread across all projects
+      const digit = parseInt(event.key, 10);
+      if (
+        digit >= 1 &&
+        digit <= 9 &&
+        isModKeyPressed(event) &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        // Collect all threads in sidebar display order (projects in order,
+        // threads within each project sorted newest-first).
+        const allThreadsInOrder = projects.flatMap((project) =>
+          threads
+            .filter((thread) => thread.projectId === project.id)
+            .toSorted((a, b) => {
+              const byDate =
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              if (byDate !== 0) return byDate;
+              return b.id.localeCompare(a.id);
+            }),
+        );
+
+        const targetThread = allThreadsInOrder[digit - 1];
+        if (!targetThread) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        void navigate({
+          to: "/$threadId",
+          params: { threadId: targetThread.id },
+        });
         return;
       }
 
@@ -84,9 +126,11 @@ function ChatRouteGlobalShortcuts() {
     clearSelection,
     handleNewThread,
     keybindings,
+    navigate,
     projects,
     selectedThreadIdsSize,
     terminalOpen,
+    threads,
     appSettings.defaultThreadEnvMode,
   ]);
 
