@@ -2,7 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDownIcon, PlusIcon, RotateCcwIcon, Undo2Icon, XIcon } from "lucide-react";
 import { type ReactNode, useCallback, useState } from "react";
-import { type ProviderKind, DEFAULT_GIT_TEXT_GENERATION_MODEL } from "@t3tools/contracts";
+import {
+  type ProviderKind,
+  DEFAULT_GIT_TEXT_GENERATION_MODEL,
+  DEFAULT_GIT_TEXT_GENERATION_PROVIDER,
+  DEFAULT_CLAUDE_TEXT_GENERATION_MODEL,
+} from "@t3tools/contracts";
 import { getModelOptions, normalizeModelSlug } from "@t3tools/shared/model";
 import {
   getAppModelOptions,
@@ -215,15 +220,29 @@ function SettingsRouteView() {
   const keybindingsConfigPath = serverConfigQuery.data?.keybindingsConfigPath ?? null;
   const availableEditors = serverConfigQuery.data?.availableEditors;
 
+  const gitTextGenerationProvider: ProviderKind =
+    settings.textGenerationProvider ?? DEFAULT_GIT_TEXT_GENERATION_PROVIDER;
+  const defaultGitTextGenerationProvider =
+    defaults.textGenerationProvider ?? DEFAULT_GIT_TEXT_GENERATION_PROVIDER;
+  const isGitTextGenerationProviderDirty =
+    gitTextGenerationProvider !== defaultGitTextGenerationProvider;
   const gitTextGenerationModelOptions = getAppModelOptions(
-    "codex",
-    settings.customCodexModels,
+    gitTextGenerationProvider,
+    gitTextGenerationProvider === "codex"
+      ? settings.customCodexModels
+      : settings.customClaudeModels,
     settings.textGenerationModel,
   );
   const currentGitTextGenerationModel =
-    settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
+    settings.textGenerationModel ??
+    (gitTextGenerationProvider === "claudeAgent"
+      ? DEFAULT_CLAUDE_TEXT_GENERATION_MODEL
+      : DEFAULT_GIT_TEXT_GENERATION_MODEL);
   const defaultGitTextGenerationModel =
-    defaults.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
+    defaults.textGenerationModel ??
+    (gitTextGenerationProvider === "claudeAgent"
+      ? DEFAULT_CLAUDE_TEXT_GENERATION_MODEL
+      : DEFAULT_GIT_TEXT_GENERATION_MODEL);
   const isGitTextGenerationModelDirty =
     currentGitTextGenerationModel !== defaultGitTextGenerationModel;
   const selectedGitTextGenerationModelLabel =
@@ -260,6 +279,7 @@ function SettingsRouteView() {
     ...(settings.confirmThreadDelete !== defaults.confirmThreadDelete
       ? ["Delete confirmation"]
       : []),
+    ...(isGitTextGenerationProviderDirty ? ["Git writing provider"] : []),
     ...(isGitTextGenerationModelDirty ? ["Git writing model"] : []),
     ...(settings.customCodexModels.length > 0 || settings.customClaudeModels.length > 0
       ? ["Custom models"]
@@ -601,6 +621,57 @@ function SettingsRouteView() {
             </SettingsSection>
 
             <SettingsSection title="Models">
+              <SettingsRow
+                title="Git writing provider"
+                description="Provider used for generating commit messages, PR titles, and branch names."
+                resetAction={
+                  isGitTextGenerationProviderDirty ? (
+                    <SettingResetButton
+                      label="git writing provider"
+                      onClick={() =>
+                        updateSettings({
+                          textGenerationProvider: defaults.textGenerationProvider,
+                          textGenerationModel: defaults.textGenerationModel,
+                        })
+                      }
+                    />
+                  ) : null
+                }
+                control={
+                  <Select
+                    value={gitTextGenerationProvider}
+                    onValueChange={(value) => {
+                      if (!value) return;
+                      const provider = value as ProviderKind;
+                      updateSettings({
+                        textGenerationProvider: provider,
+                        textGenerationModel:
+                          provider === "claudeAgent"
+                            ? DEFAULT_CLAUDE_TEXT_GENERATION_MODEL
+                            : DEFAULT_GIT_TEXT_GENERATION_MODEL,
+                      });
+                    }}
+                  >
+                    <SelectTrigger
+                      className="w-full sm:w-52"
+                      aria-label="Git text generation provider"
+                    >
+                      <SelectValue>
+                        {gitTextGenerationProvider === "claudeAgent" ? "Claude" : "Codex"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectPopup align="end" alignItemWithTrigger={false}>
+                      <SelectItem hideIndicator value="codex">
+                        Codex
+                      </SelectItem>
+                      <SelectItem hideIndicator value="claudeAgent">
+                        Claude
+                      </SelectItem>
+                    </SelectPopup>
+                  </Select>
+                }
+              />
+
               <SettingsRow
                 title="Git writing model"
                 description="Used for generated commit messages, PR titles, and branch names."

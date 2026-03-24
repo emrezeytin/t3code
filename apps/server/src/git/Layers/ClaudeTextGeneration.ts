@@ -1,13 +1,9 @@
-import { randomUUID } from "node:crypto";
-
-import { Effect, FileSystem, Layer, Option, Path, Schema, Stream } from "effect";
+import { Effect, Option, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { DEFAULT_GIT_TEXT_GENERATION_MODEL } from "@t3tools/contracts";
+import { DEFAULT_CLAUDE_TEXT_GENERATION_MODEL } from "@t3tools/contracts";
 import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@t3tools/shared/git";
 
-import { resolveAttachmentPath } from "../../attachmentStore.ts";
-import { ServerConfig } from "../../config.ts";
 import { TextGenerationError } from "../Errors.ts";
 import {
   type BranchNameGenerationInput,
@@ -15,24 +11,12 @@ import {
   type CommitMessageGenerationResult,
   type PrContentGenerationResult,
   type TextGenerationShape,
-  TextGeneration,
 } from "../Services/TextGeneration.ts";
+import { limitSection, sanitizeCommitSubject, sanitizePrTitle } from "./CodexTextGeneration.ts";
 
-const CODEX_REASONING_EFFORT = "low";
-const CODEX_TIMEOUT_MS = 180_000;
+const CLAUDE_TIMEOUT_MS = 180_000;
 
-function toCodexOutputJsonSchema(schema: Schema.Top): unknown {
-  const document = Schema.toJsonSchemaDocument(schema);
-  if (document.definitions && Object.keys(document.definitions).length > 0) {
-    return {
-      ...document.schema,
-      $defs: document.definitions,
-    };
-  }
-  return document.schema;
-}
-
-function normalizeCodexError(
+function normalizeClaudeError(
   operation: string,
   error: unknown,
   fallback: string,
@@ -44,13 +28,13 @@ function normalizeCodexError(
   if (error instanceof Error) {
     const lower = error.message.toLowerCase();
     if (
-      error.message.includes("Command not found: codex") ||
-      lower.includes("spawn codex") ||
+      error.message.includes("Command not found: claude") ||
+      lower.includes("spawn claude") ||
       lower.includes("enoent")
     ) {
       return new TextGenerationError({
         operation,
-        detail: "Codex CLI (`codex`) is required but not available on PATH.",
+        detail: "Claude CLI (`claude`) is required but not available on PATH.",
         cause: error,
       });
     }
@@ -68,44 +52,21 @@ function normalizeCodexError(
   });
 }
 
-function limitSection(value: string, maxChars: number): string {
-  if (value.length <= maxChars) return value;
-  const truncated = value.slice(0, maxChars);
-  return `${truncated}\n\n[truncated]`;
+/**
+ * Strip markdown code fences from output as a safety measure before JSON parse.
+ * Claude sometimes wraps JSON in ```json ... ``` blocks.
+ */
+function stripCodeFences(text: string): string {
+  const trimmed = text.trim();
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+  if (fenceMatch) {
+    return fenceMatch[1]!.trim();
+  }
+  return trimmed;
 }
 
-function sanitizeCommitSubject(raw: string): string {
-  const singleLine = raw.trim().split(/\r?\n/g)[0]?.trim() ?? "";
-  const withoutTrailingPeriod = singleLine.replace(/[.]+$/g, "").trim();
-  if (withoutTrailingPeriod.length === 0) {
-    return "Update project files";
-  }
-
-  if (withoutTrailingPeriod.length <= 72) {
-    return withoutTrailingPeriod;
-  }
-  return withoutTrailingPeriod.slice(0, 72).trimEnd();
-}
-
-function sanitizePrTitle(raw: string): string {
-  const singleLine = raw.trim().split(/\r?\n/g)[0]?.trim() ?? "";
-  if (singleLine.length > 0) {
-    return singleLine;
-  }
-  return "Update project changes";
-}
-
-export { limitSection, sanitizeCommitSubject, sanitizePrTitle };
-
-export const makeCodexTextGeneration = Effect.gen(function* () {
-  const fileSystem = yield* FileSystem.FileSystem;
-  const path = yield* Path.Path;
+export const makeClaudeTextGeneration = Effect.gen(function* () {
   const commandSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-  const serverConfig = yield* Effect.service(ServerConfig);
-
-  type MaterializedImageAttachments = {
-    readonly imagePaths: ReadonlyArray<string>;
-  };
 
   const readStreamAsString = <E>(
     operation: string,
@@ -119,118 +80,43 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
         }),
       ).pipe(
         Effect.mapError((cause) =>
-          normalizeCodexError(operation, cause, "Failed to collect process output"),
+          normalizeClaudeError(operation, cause, "Failed to collect process output"),
         ),
       );
       return text;
     });
 
-  const tempDir = process.env.TMPDIR ?? process.env.TEMP ?? process.env.TMP ?? "/tmp";
-
-  const writeTempFile = (
-    operation: string,
-    prefix: string,
-    content: string,
-  ): Effect.Effect<string, TextGenerationError> => {
-    const filePath = path.join(tempDir, `t3code-${prefix}-${process.pid}-${randomUUID()}.tmp`);
-    return fileSystem.writeFileString(filePath, content).pipe(
-      Effect.mapError(
-        (cause) =>
-          new TextGenerationError({
-            operation,
-            detail: `Failed to write temp file at ${filePath}.`,
-            cause,
-          }),
-      ),
-      Effect.as(filePath),
-    );
-  };
-
-  const safeUnlink = (filePath: string): Effect.Effect<void, never> =>
-    fileSystem.remove(filePath).pipe(Effect.catch(() => Effect.void));
-
-  const materializeImageAttachments = (
-    _operation: "generateCommitMessage" | "generatePrContent" | "generateBranchName",
-    attachments: BranchNameGenerationInput["attachments"],
-  ): Effect.Effect<MaterializedImageAttachments, TextGenerationError> =>
-    Effect.gen(function* () {
-      if (!attachments || attachments.length === 0) {
-        return { imagePaths: [] };
-      }
-
-      const imagePaths: string[] = [];
-      for (const attachment of attachments) {
-        if (attachment.type !== "image") {
-          continue;
-        }
-
-        const resolvedPath = resolveAttachmentPath({
-          attachmentsDir: serverConfig.attachmentsDir,
-          attachment,
-        });
-        if (!resolvedPath || !path.isAbsolute(resolvedPath)) {
-          continue;
-        }
-        const fileInfo = yield* fileSystem
-          .stat(resolvedPath)
-          .pipe(Effect.catch(() => Effect.succeed(null)));
-        if (!fileInfo || fileInfo.type !== "File") {
-          continue;
-        }
-        imagePaths.push(resolvedPath);
-      }
-      return { imagePaths };
-    });
-
-  const runCodexJson = <S extends Schema.Top>({
+  const runClaudeJson = <S extends Schema.Top>({
     operation,
     cwd,
     prompt,
     outputSchemaJson,
-    imagePaths = [],
-    cleanupPaths = [],
     model,
   }: {
     operation: "generateCommitMessage" | "generatePrContent" | "generateBranchName";
     cwd: string;
     prompt: string;
     outputSchemaJson: S;
-    imagePaths?: ReadonlyArray<string>;
-    cleanupPaths?: ReadonlyArray<string>;
     model?: string;
   }): Effect.Effect<S["Type"], TextGenerationError, S["DecodingServices"]> =>
     Effect.gen(function* () {
-      const schemaPath = yield* writeTempFile(
-        operation,
-        "codex-schema",
-        JSON.stringify(toCodexOutputJsonSchema(outputSchemaJson)),
-      );
-      const outputPath = yield* writeTempFile(operation, "codex-output", "");
+      const fullPrompt = `${prompt}\n\nRespond with ONLY valid JSON matching this schema, no additional text or markdown:\n${JSON.stringify(Schema.toJsonSchemaDocument(outputSchemaJson).schema)}`;
 
-      const runCodexCommand = Effect.gen(function* () {
+      const runClaudeCommand = Effect.gen(function* () {
         const command = ChildProcess.make(
-          "codex",
+          "claude",
           [
-            "exec",
-            "--ephemeral",
-            "-s",
-            "read-only",
+            "-p",
             "--model",
-            model ?? DEFAULT_GIT_TEXT_GENERATION_MODEL,
-            "--config",
-            `model_reasoning_effort="${CODEX_REASONING_EFFORT}"`,
-            "--output-schema",
-            schemaPath,
-            "--output-last-message",
-            outputPath,
-            ...imagePaths.flatMap((imagePath) => ["--image", imagePath]),
-            "-",
+            model ?? DEFAULT_CLAUDE_TEXT_GENERATION_MODEL,
+            "--output-format",
+            "text",
           ],
           {
             cwd,
             shell: process.platform === "win32",
             stdin: {
-              stream: Stream.make(new TextEncoder().encode(prompt)),
+              stream: Stream.make(new TextEncoder().encode(fullPrompt)),
             },
           },
         );
@@ -239,7 +125,7 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
           .spawn(command)
           .pipe(
             Effect.mapError((cause) =>
-              normalizeCodexError(operation, cause, "Failed to spawn Codex CLI process"),
+              normalizeClaudeError(operation, cause, "Failed to spawn Claude CLI process"),
             ),
           );
 
@@ -250,7 +136,7 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
             child.exitCode.pipe(
               Effect.map((value) => Number(value)),
               Effect.mapError((cause) =>
-                normalizeCodexError(operation, cause, "Failed to read Codex CLI exit code"),
+                normalizeClaudeError(operation, cause, "Failed to read Claude CLI exit code"),
               ),
             ),
           ],
@@ -265,55 +151,48 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
             operation,
             detail:
               detail.length > 0
-                ? `Codex CLI command failed: ${detail}`
-                : `Codex CLI command failed with code ${exitCode}.`,
+                ? `Claude CLI command failed: ${detail}`
+                : `Claude CLI command failed with code ${exitCode}.`,
           });
         }
+
+        return stdout;
       });
 
-      const cleanup = Effect.all(
-        [schemaPath, outputPath, ...cleanupPaths].map((filePath) => safeUnlink(filePath)),
-        {
-          concurrency: "unbounded",
-        },
-      ).pipe(Effect.asVoid);
+      const stdout = yield* runClaudeCommand.pipe(
+        Effect.scoped,
+        Effect.timeoutOption(CLAUDE_TIMEOUT_MS),
+        Effect.flatMap(
+          Option.match({
+            onNone: () =>
+              Effect.fail(
+                new TextGenerationError({ operation, detail: "Claude CLI request timed out." }),
+              ),
+            onSome: (value) => Effect.succeed(value),
+          }),
+        ),
+      );
 
-      return yield* Effect.gen(function* () {
-        yield* runCodexCommand.pipe(
-          Effect.scoped,
-          Effect.timeoutOption(CODEX_TIMEOUT_MS),
-          Effect.flatMap(
-            Option.match({
-              onNone: () =>
-                Effect.fail(
-                  new TextGenerationError({ operation, detail: "Codex CLI request timed out." }),
-                ),
-              onSome: () => Effect.void,
+      const jsonText = stripCodeFences(stdout);
+
+      return yield* Effect.try({
+        try: () => JSON.parse(jsonText) as unknown,
+        catch: () =>
+          new TextGenerationError({
+            operation,
+            detail: "Claude returned invalid JSON output.",
+          }),
+      }).pipe(
+        Effect.flatMap(Schema.decodeEffect(outputSchemaJson)),
+        Effect.catchTag("SchemaError", () =>
+          Effect.fail(
+            new TextGenerationError({
+              operation,
+              detail: "Claude returned invalid structured output.",
             }),
           ),
-        );
-
-        return yield* fileSystem.readFileString(outputPath).pipe(
-          Effect.mapError(
-            (cause) =>
-              new TextGenerationError({
-                operation,
-                detail: "Failed to read Codex output file.",
-                cause,
-              }),
-          ),
-          Effect.flatMap(Schema.decodeEffect(Schema.fromJsonString(outputSchemaJson))),
-          Effect.catchTag("SchemaError", (cause) =>
-            Effect.fail(
-              new TextGenerationError({
-                operation,
-                detail: "Codex returned invalid structured output.",
-                cause,
-              }),
-            ),
-          ),
-        );
-      }).pipe(Effect.ensuring(cleanup));
+        ),
+      );
     });
 
   const generateCommitMessage: TextGenerationShape["generateCommitMessage"] = (input) => {
@@ -352,7 +231,7 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
           body: Schema.String,
         });
 
-    return runCodexJson({
+    return runClaudeJson({
       operation: "generateCommitMessage",
       cwd: input.cwd,
       prompt,
@@ -395,7 +274,7 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
       limitSection(input.diffPatch, 40_000),
     ].join("\n");
 
-    return runCodexJson({
+    return runClaudeJson({
       operation: "generatePrContent",
       cwd: input.cwd,
       prompt,
@@ -417,10 +296,7 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
 
   const generateBranchName: TextGenerationShape["generateBranchName"] = (input) => {
     return Effect.gen(function* () {
-      const { imagePaths } = yield* materializeImageAttachments(
-        "generateBranchName",
-        input.attachments,
-      );
+      // Claude `-p` mode doesn't support --image flags, so images are gracefully ignored.
       const attachmentLines = (input.attachments ?? []).map(
         (attachment) =>
           `- ${attachment.name} (${attachment.mimeType}, ${attachment.sizeBytes} bytes)`,
@@ -433,7 +309,7 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
         "- Branch should describe the requested work from the user message.",
         "- Keep it short and specific (2-6 words).",
         "- Use plain words only, no issue prefixes and no punctuation-heavy text.",
-        "- If images are attached, use them as primary context for visual/UI issues.",
+        "- If images are attached, use their metadata as context for visual/UI issues.",
         "",
         "User message:",
         limitSection(input.message, 8_000),
@@ -447,14 +323,13 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
       }
       const prompt = promptSections.join("\n");
 
-      const generated = yield* runCodexJson({
+      const generated = yield* runClaudeJson({
         operation: "generateBranchName",
         cwd: input.cwd,
         prompt,
         outputSchemaJson: Schema.Struct({
           branch: Schema.String,
         }),
-        imagePaths,
         ...(input.model ? { model: input.model } : {}),
       });
 
@@ -470,5 +345,3 @@ export const makeCodexTextGeneration = Effect.gen(function* () {
     generateBranchName,
   } satisfies TextGenerationShape;
 });
-
-export const CodexTextGenerationLive = Layer.effect(TextGeneration, makeCodexTextGeneration);

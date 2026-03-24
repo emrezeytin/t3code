@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Option, Schema } from "effect";
 import {
   TrimmedNonEmptyString,
-  type ProviderKind,
+  ProviderKind,
   type ProviderStartOptions,
 } from "@t3tools/contracts";
 import {
@@ -61,6 +61,7 @@ export const AppSettingsSchema = Schema.Struct({
   customCodexModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customClaudeModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
+  textGenerationProvider: Schema.optional(ProviderKind),
 });
 export type AppSettings = typeof AppSettingsSchema.Type;
 export interface AppModelOption {

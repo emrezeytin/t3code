@@ -262,6 +262,7 @@ export default function GitActionsControl({ gitCwd, activeThreadId }: GitActions
       cwd: gitCwd,
       queryClient,
       model: settings.textGenerationModel ?? null,
+      provider: settings.textGenerationProvider ?? null,
     }),
   );
   const pullMutation = useMutation(gitPullMutationOptions({ cwd: gitCwd, queryClient }));

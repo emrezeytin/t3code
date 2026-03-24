@@ -21,6 +21,8 @@ export interface CommitMessageGenerationInput {
   includeBranch?: boolean;
   /** Model to use for generation. Defaults to gpt-5.4-mini if not specified. */
   model?: string;
+  /** Provider to use for generation. Defaults to "codex" if not specified. */
+  provider?: "codex" | "claudeAgent";
 }
 
 export interface CommitMessageGenerationResult {
@@ -39,6 +41,8 @@ export interface PrContentGenerationInput {
   diffPatch: string;
   /** Model to use for generation. Defaults to gpt-5.4-mini if not specified. */
   model?: string;
+  /** Provider to use for generation. Defaults to "codex" if not specified. */
+  provider?: "codex" | "claudeAgent";
 }
 
 export interface PrContentGenerationResult {
@@ -52,6 +56,8 @@ export interface BranchNameGenerationInput {
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   /** Model to use for generation. Defaults to gpt-5.4-mini if not specified. */
   model?: string;
+  /** Provider to use for generation. Defaults to "codex" if not specified. */
+  provider?: "codex" | "claudeAgent";
 }
 
 export interface BranchNameGenerationResult {
