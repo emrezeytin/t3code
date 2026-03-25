@@ -495,6 +495,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
   const isLocalDraftThread = !isServerThread && localDraftThread !== undefined;
   const canCheckoutPullRequestIntoThread = isLocalDraftThread;
   const diffOpen = rawSearch.diff === "1";
+  const filePanelOpen = rawSearch.filePanel === "1";
   const activeThreadId = activeThread?.id ?? null;
   const activeLatestTurn = activeThread?.latestTurn ?? null;
   const activeContextWindow = useMemo(
@@ -1221,6 +1222,18 @@ export default function ChatView({ threadId }: ChatViewProps) {
       },
     });
   }, [diffOpen, navigate, threadId]);
+
+  const onToggleFilePanel = useCallback(() => {
+    void navigate({
+      to: "/$threadId",
+      params: { threadId },
+      replace: true,
+      search: (previous) => {
+        const rest = stripDiffSearchParams(previous);
+        return filePanelOpen ? { ...rest, filePanel: undefined } : { ...rest, filePanel: "1" };
+      },
+    });
+  }, [filePanelOpen, navigate, threadId]);
 
   const envLocked = Boolean(
     activeThread &&
@@ -2301,6 +2314,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
     splitTerminal,
     keybindings,
     onToggleDiff,
+    onToggleFilePanel,
     toggleTerminalVisibility,
   ]);
 
@@ -3621,6 +3635,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
           diffToggleShortcutLabel={diffPanelShortcutLabel}
           gitCwd={gitCwd}
           diffOpen={diffOpen}
+          filePanelOpen={filePanelOpen}
           onRunProjectScript={(script) => {
             void runProjectScript(script);
           }}
@@ -3629,6 +3644,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
           onDeleteProjectScript={deleteProjectScript}
           onToggleTerminal={toggleTerminalVisibility}
           onToggleDiff={onToggleDiff}
+          onToggleFilePanel={onToggleFilePanel}
         />
       </header>
 
