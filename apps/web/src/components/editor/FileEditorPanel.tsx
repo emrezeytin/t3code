@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ThreadId } from "@t3tools/contracts";
-import { XIcon, SaveIcon, FolderTreeIcon, PanelRightCloseIcon } from "lucide-react";
+import { XIcon, SaveIcon, FolderTreeIcon } from "lucide-react";
 import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useStore } from "~/store";
@@ -21,9 +21,6 @@ interface OpenFile {
   isDirty: boolean;
 }
 
-interface FileEditorPanelProps {
-  onClose: () => void;
-}
 
 // ── Editor tab bar ────────────────────────────────────────────────────
 
@@ -112,7 +109,7 @@ function ActiveFileEditor(props: {
 
 // ── Main panel ────────────────────────────────────────────────────────
 
-export const FileEditorPanel = memo(function FileEditorPanel({ onClose }: FileEditorPanelProps) {
+export const FileEditorPanel = memo(function FileEditorPanel() {
   const routeThreadId = useParams({
     strict: false,
     select: (params) => (params.threadId ? ThreadId.makeUnsafe(params.threadId) : null),
@@ -270,14 +267,6 @@ export const FileEditorPanel = memo(function FileEditorPanel({ onClose }: FileEd
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={onClose}
-          title="Close file editor"
-          className="rounded p-1 text-muted-foreground/60 hover:bg-accent/60 hover:text-foreground"
-        >
-          <PanelRightCloseIcon className="size-4" />
-        </button>
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────── */}

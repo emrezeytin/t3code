@@ -162,7 +162,7 @@ const RightPanelInlineSidebar = (props: {
         <div
           className={activeTab === "files" && renderFilePanel ? "flex h-full flex-col" : "hidden"}
         >
-          {renderFilePanel && <FileEditorPanel onClose={onClose} />}
+          {renderFilePanel && <FileEditorPanel />}
         </div>
 
         <SidebarRail />
@@ -282,7 +282,7 @@ function ChatThreadRouteView() {
       </SidebarInset>
       <DiffPanelSheet diffOpen={sheetOpen} onCloseDiff={closeRightPanel}>
         {activeTab === "files" && shouldRenderFilePanel ? (
-          <FileEditorPanel onClose={closeRightPanel} />
+          <FileEditorPanel />
         ) : shouldRenderDiffContent ? (
           <LazyDiffPanel mode="sheet" />
         ) : null}
