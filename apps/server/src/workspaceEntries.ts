@@ -5,6 +5,7 @@ import { runProcess } from "./processRunner";
 
 import {
   ProjectEntry,
+  ProjectListDirectoryResult,
   ProjectSearchEntriesInput,
   ProjectSearchEntriesResult,
 } from "@t3tools/contracts";
@@ -532,6 +533,59 @@ async function getWorkspaceIndex(cwd: string): Promise<WorkspaceIndex> {
     });
   inFlightWorkspaceIndexBuilds.set(cwd, nextPromise);
   return nextPromise;
+}
+
+const DIRECTORY_LIST_MAX_ENTRIES = 1_000;
+
+export async function listWorkspaceDirectory(params: {
+  absolutePath: string;
+  cwd: string;
+  relativePath: string;
+}): Promise<ProjectListDirectoryResult> {
+  const dirents = await fs.readdir(params.absolutePath, { withFileTypes: true });
+  dirents.sort((left, right) => left.name.localeCompare(right.name));
+
+  const entries: ProjectEntry[] = [];
+  let truncated = false;
+
+  for (const dirent of dirents) {
+    if (!dirent.name || dirent.name === "." || dirent.name === "..") {
+      continue;
+    }
+    if (dirent.isDirectory() && IGNORED_DIRECTORY_NAMES.has(dirent.name)) {
+      continue;
+    }
+    if (!dirent.isDirectory() && !dirent.isFile()) {
+      continue;
+    }
+
+    if (entries.length >= DIRECTORY_LIST_MAX_ENTRIES) {
+      truncated = true;
+      break;
+    }
+
+    const entryRelativePath = toPosixPath(
+      params.relativePath && params.relativePath !== "."
+        ? path.join(params.relativePath, dirent.name)
+        : dirent.name,
+    );
+
+    entries.push({
+      path: entryRelativePath,
+      kind: dirent.isDirectory() ? "directory" : "file",
+      parentPath: params.relativePath && params.relativePath !== "." ? params.relativePath : undefined,
+    });
+  }
+
+  // Sort directories before files for a tree-like display
+  entries.sort((left, right) => {
+    if (left.kind !== right.kind) {
+      return left.kind === "directory" ? -1 : 1;
+    }
+    return left.path.localeCompare(right.path);
+  });
+
+  return { entries, truncated };
 }
 
 export function clearWorkspaceIndexCache(cwd: string): void {

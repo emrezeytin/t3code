@@ -49,7 +49,7 @@ import { createLogger } from "./logger";
 import { GitManager } from "./git/Services/GitManager.ts";
 import { TerminalManager } from "./terminal/Services/Manager.ts";
 import { Keybindings } from "./keybindings";
-import { searchWorkspaceEntries } from "./workspaceEntries";
+import { listWorkspaceDirectory, searchWorkspaceEntries } from "./workspaceEntries";
 import { OrchestrationEngineService } from "./orchestration/Services/OrchestrationEngine";
 import { ProjectionSnapshotQuery } from "./orchestration/Services/ProjectionSnapshotQuery";
 import { OrchestrationReactor } from "./orchestration/Services/OrchestrationReactor";
@@ -775,6 +775,41 @@ export const createServer = Effect.fn(function* (): Effect.fn.Return<
           ),
         );
         return { relativePath: target.relativePath };
+      }
+
+      case WS_METHODS.projectsReadFile: {
+        const body = stripRequestTag(request.body);
+        const target = yield* resolveWorkspaceWritePath({
+          workspaceRoot: body.cwd,
+          relativePath: body.relativePath,
+          path,
+        });
+        const contents = yield* fileSystem.readFileString(target.absolutePath).pipe(
+          Effect.mapError(
+            (cause) =>
+              new RouteRequestError({
+                message: `Failed to read workspace file: ${String(cause)}`,
+              }),
+          ),
+        );
+        return { relativePath: target.relativePath, contents };
+      }
+
+      case WS_METHODS.projectsListDirectory: {
+        const body = stripRequestTag(request.body);
+        const target = yield* resolveWorkspaceWritePath({
+          workspaceRoot: body.cwd,
+          relativePath: body.relativePath,
+          path,
+        });
+        const entries = yield* Effect.tryPromise({
+          try: () => listWorkspaceDirectory({ absolutePath: target.absolutePath, cwd: body.cwd, relativePath: target.relativePath }),
+          catch: (cause) =>
+            new RouteRequestError({
+              message: `Failed to list directory: ${String(cause)}`,
+            }),
+        });
+        return entries;
       }
 
       case WS_METHODS.providerGetSkills: {
