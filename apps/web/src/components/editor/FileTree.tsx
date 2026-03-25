@@ -30,7 +30,7 @@ const DirectoryNode = memo(function DirectoryNode({
   onSelectFile,
   resolvedTheme,
 }: DirectoryNodeProps) {
-  const [expanded, setExpanded] = useState(depth === 0);
+  const [expanded, setExpanded] = useState(false);
   const childrenQuery = useQuery(
     projectListDirectoryQueryOptions({
       cwd,
@@ -62,7 +62,7 @@ const DirectoryNode = memo(function DirectoryNode({
         ) : (
           <FolderClosedIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
         )}
-        <span className="truncate font-mono text-[11px] text-muted-foreground/90 group-hover:text-foreground">
+        <span className="truncate font-mono text-[11px] text-muted-foreground/90">
           {baseName(entry.path)}
         </span>
       </button>
@@ -150,7 +150,7 @@ const FileNode = memo(function FileNode({
       <span
         className={cn(
           "truncate font-mono text-[11px]",
-          isSelected ? "text-foreground" : "text-muted-foreground/80 group-hover:text-foreground",
+          isSelected ? "text-foreground" : "text-muted-foreground/80",
         )}
       >
         {baseName(entry.path)}

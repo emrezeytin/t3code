@@ -15,8 +15,6 @@ import {
   EditorView,
   drawSelection,
   dropCursor,
-  highlightActiveLine,
-  highlightActiveLineGutter,
   highlightSpecialChars,
   keymap,
   lineNumbers,
@@ -28,7 +26,6 @@ import { useEffect, useRef } from "react";
 
 const BASE_EXTENSIONS: Extension[] = [
   lineNumbers(),
-  highlightActiveLineGutter(),
   highlightSpecialChars(),
   history(),
   drawSelection(),
@@ -36,7 +33,7 @@ const BASE_EXTENSIONS: Extension[] = [
   indentOnInput(),
   syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
   rectangularSelection(),
-  highlightActiveLine(),
+  EditorView.lineWrapping,
   keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
   search({ top: false }),
   oneDark,
