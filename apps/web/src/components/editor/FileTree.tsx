@@ -69,12 +69,20 @@ const DirectoryNode = memo(function DirectoryNode({
 
       {expanded && (
         <div>
-          {childrenQuery.isPending && (
+          {(childrenQuery.isPending || childrenQuery.isPlaceholderData) && (
             <div
               className="py-1 font-mono text-[10px] text-muted-foreground/50"
               style={{ paddingLeft: `${leftPadding + 22}px` }}
             >
               Loading…
+            </div>
+          )}
+          {childrenQuery.isError && (
+            <div
+              className="py-1 font-mono text-[10px] text-destructive/60"
+              style={{ paddingLeft: `${leftPadding + 22}px` }}
+            >
+              Failed to load
             </div>
           )}
           {childrenQuery.data?.entries.map((child) =>
@@ -171,7 +179,7 @@ export const FileTree = memo(function FileTree({
     );
   }
 
-  if (rootQuery.isPending) {
+  if (rootQuery.isPending || rootQuery.isPlaceholderData) {
     return (
       <div className="flex flex-col gap-1 px-2 py-2">
         {Array.from({ length: 8 }, (_, i) => (
@@ -194,6 +202,14 @@ export const FileTree = memo(function FileTree({
   }
 
   const entries = rootQuery.data?.entries ?? [];
+
+  if (entries.length === 0) {
+    return (
+      <div className="px-3 py-4 text-center font-mono text-[11px] text-muted-foreground/50">
+        No files found
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-0 overflow-y-auto py-1">
