@@ -255,7 +255,21 @@ export const MessagesTimeline = memo(function MessagesTimeline({
       }
       if (row.kind === "proposed-plan") return estimateTimelineProposedPlanHeight(row.proposedPlan);
       if (row.kind === "working") return 40;
-      return estimateTimelineMessageHeight(row.message, { timelineWidthPx });
+      let height = estimateTimelineMessageHeight(row.message, { timelineWidthPx });
+      // Account for the ChangedFilesTree rendered below assistant message text.
+      // Without this, assistant messages with file diffs are severely underestimated
+      // (sometimes by 300-500px), causing overlap with adjacent rows when scrolling up.
+      if (row.message.role === "assistant") {
+        const turnSummary = turnDiffSummaryByAssistantMessageId.get(row.message.id);
+        if (turnSummary && turnSummary.files.length > 0) {
+          // Container: mt-2(8) + p-2.5(20) + border(2) ≈ 30px
+          // Header row: ~30px + mb-1.5(6) ≈ 36px
+          // Each tree node (file + amortised directory overhead ~30%): ~30px
+          const estimatedNodeCount = Math.ceil(turnSummary.files.length * 1.3);
+          height += 66 + estimatedNodeCount * 30;
+        }
+      }
+      return height;
     },
     measureElement: measureVirtualElement,
     useAnimationFrameWithResizeObserver: true,
@@ -279,22 +293,12 @@ export const MessagesTimeline = memo(function MessagesTimeline({
       rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = undefined;
     };
   }, [rowVirtualizer]);
-  const pendingMeasureFrameRef = useRef<number | null>(null);
-  const onTimelineImageLoad = useCallback(() => {
-    if (pendingMeasureFrameRef.current !== null) return;
-    pendingMeasureFrameRef.current = window.requestAnimationFrame(() => {
-      pendingMeasureFrameRef.current = null;
-      rowVirtualizer.measure();
-    });
-  }, [rowVirtualizer]);
-  useEffect(() => {
-    return () => {
-      const frame = pendingMeasureFrameRef.current;
-      if (frame !== null) {
-        window.cancelAnimationFrame(frame);
-      }
-    };
-  }, []);
+  // Note: image loads are handled by the ResizeObserver attached via
+  // `rowVirtualizer.measureElement` on each virtual row.  A previous
+  // `onTimelineImageLoad` callback called `rowVirtualizer.measure()` on every
+  // image load, which cleared the *entire* item-size cache and forced all rows
+  // back to their estimates — causing visible overlap between ChangedFilesTree
+  // panels and adjacent user messages when scrolling up.
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const nonVirtualizedRows = rows.slice(virtualizedRowCount);
@@ -390,8 +394,6 @@ export const MessagesTimeline = memo(function MessagesTimeline({
                                 src={image.previewUrl}
                                 alt={image.name}
                                 className="h-full max-h-[220px] w-full object-cover"
-                                onLoad={onTimelineImageLoad}
-                                onError={onTimelineImageLoad}
                               />
                             </button>
                           ) : (

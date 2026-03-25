@@ -28,6 +28,7 @@ interface ChatHeaderProps {
   terminalOpen: boolean;
   terminalToggleShortcutLabel: string | null;
   diffToggleShortcutLabel: string | null;
+  filePanelToggleShortcutLabel: string | null;
   gitCwd: string | null;
   diffOpen: boolean;
   filePanelOpen: boolean;
@@ -54,6 +55,7 @@ export const ChatHeader = memo(function ChatHeader({
   terminalOpen,
   terminalToggleShortcutLabel,
   diffToggleShortcutLabel,
+  filePanelToggleShortcutLabel,
   gitCwd,
   diffOpen,
   filePanelOpen,
@@ -169,7 +171,11 @@ export const ChatHeader = memo(function ChatHeader({
               </Toggle>
             }
           />
-          <TooltipPopup side="bottom">Toggle file editor</TooltipPopup>
+          <TooltipPopup side="bottom">
+            {filePanelToggleShortcutLabel
+              ? `Toggle file editor (${filePanelToggleShortcutLabel})`
+              : "Toggle file editor"}
+          </TooltipPopup>
         </Tooltip>
       </div>
     </div>

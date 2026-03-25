@@ -1211,6 +1211,10 @@ export default function ChatView({ threadId }: ChatViewProps) {
     () => shortcutLabelForCommand(keybindings, "diff.toggle"),
     [keybindings],
   );
+  const filePanelShortcutLabel = useMemo(
+    () => shortcutLabelForCommand(keybindings, "filePanel.toggle"),
+    [keybindings],
+  );
   const onToggleDiff = useCallback(() => {
     void navigate({
       to: "/$threadId",
@@ -1218,12 +1222,15 @@ export default function ChatView({ threadId }: ChatViewProps) {
       replace: true,
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return diffOpen
-          ? { ...rest, diff: undefined, filePanel: undefined }
-          : { ...rest, diff: "1", filePanel: undefined };
+        // Use `previous` (live URL at nav time) instead of the captured closure.
+        // Explicitly set both panel keys in every branch — retainSearchParams will
+        // otherwise re-inject whichever key is currently present in the URL.
+        return previous.diff === "1"
+          ? { ...rest, diff: undefined, filePanel: undefined }   // close diff
+          : { ...rest, diff: "1", filePanel: undefined };         // open diff, close filePanel
       },
     });
-  }, [diffOpen, navigate, threadId]);
+  }, [navigate, threadId]);
 
   const onToggleFilePanel = useCallback(() => {
     void navigate({
@@ -1232,12 +1239,12 @@ export default function ChatView({ threadId }: ChatViewProps) {
       replace: true,
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return filePanelOpen
-          ? { ...rest, diff: undefined, filePanel: undefined }
-          : { ...rest, diff: undefined, filePanel: "1" };
+        return previous.filePanel === "1"
+          ? { ...rest, diff: undefined, filePanel: undefined }   // close filePanel
+          : { ...rest, filePanel: "1", diff: undefined };         // open filePanel, close diff
       },
     });
-  }, [filePanelOpen, navigate, threadId]);
+  }, [navigate, threadId]);
 
   const envLocked = Boolean(
     activeThread &&
@@ -2293,6 +2300,13 @@ export default function ChatView({ threadId }: ChatViewProps) {
         event.preventDefault();
         event.stopPropagation();
         onToggleDiff();
+        return;
+      }
+
+      if (command === "filePanel.toggle") {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggleFilePanel();
         return;
       }
 
@@ -3637,6 +3651,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
           terminalOpen={terminalState.terminalOpen}
           terminalToggleShortcutLabel={terminalToggleShortcutLabel}
           diffToggleShortcutLabel={diffPanelShortcutLabel}
+          filePanelToggleShortcutLabel={filePanelShortcutLabel}
           gitCwd={gitCwd}
           diffOpen={diffOpen}
           filePanelOpen={filePanelOpen}
