@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { applyThemePreset, clearThemePreset } from "../themes/applyThemePreset";
+import { findPreset } from "../themes/presets";
 
 type Theme = "light" | "dark" | "system";
 type ThemeSnapshot = {
   theme: Theme;
   systemDark: boolean;
+  colorTheme: string;
 };
 
 const STORAGE_KEY = "t3code:theme";
+const COLOR_THEME_STORAGE_KEY = "t3code:color-theme";
 const MEDIA_QUERY = "(prefers-color-scheme: dark)";
 
 let listeners: Array<() => void> = [];
@@ -26,12 +30,30 @@ function getStored(): Theme {
   return "system";
 }
 
+function getStoredColorTheme(): string {
+  return localStorage.getItem(COLOR_THEME_STORAGE_KEY) ?? "default";
+}
+
 function applyTheme(theme: Theme, suppressTransitions = false) {
   if (suppressTransitions) {
     document.documentElement.classList.add("no-transitions");
   }
   const isDark = theme === "dark" || (theme === "system" && getSystemDark());
   document.documentElement.classList.toggle("dark", isDark);
+
+  // Apply the active color preset for the resolved light/dark mode
+  const colorThemeId = getStoredColorTheme();
+  if (colorThemeId === "default") {
+    clearThemePreset();
+  } else {
+    const preset = findPreset(colorThemeId);
+    if (preset) {
+      applyThemePreset(preset, isDark ? "dark" : "light");
+    } else {
+      clearThemePreset();
+    }
+  }
+
   syncDesktopTheme(theme);
   if (suppressTransitions) {
     // Force a reflow so the no-transitions class takes effect before removal
@@ -63,12 +85,18 @@ applyTheme(getStored());
 function getSnapshot(): ThemeSnapshot {
   const theme = getStored();
   const systemDark = theme === "system" ? getSystemDark() : false;
+  const colorTheme = getStoredColorTheme();
 
-  if (lastSnapshot && lastSnapshot.theme === theme && lastSnapshot.systemDark === systemDark) {
+  if (
+    lastSnapshot &&
+    lastSnapshot.theme === theme &&
+    lastSnapshot.systemDark === systemDark &&
+    lastSnapshot.colorTheme === colorTheme
+  ) {
     return lastSnapshot;
   }
 
-  lastSnapshot = { theme, systemDark };
+  lastSnapshot = { theme, systemDark, colorTheme };
   return lastSnapshot;
 }
 
@@ -85,7 +113,7 @@ function subscribe(listener: () => void): () => void {
 
   // Listen for storage changes from other tabs
   const handleStorage = (e: StorageEvent) => {
-    if (e.key === STORAGE_KEY) {
+    if (e.key === STORAGE_KEY || e.key === COLOR_THEME_STORAGE_KEY) {
       applyTheme(getStored(), true);
       emitChange();
     }
@@ -102,6 +130,7 @@ function subscribe(listener: () => void): () => void {
 export function useTheme() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot);
   const theme = snapshot.theme;
+  const colorTheme = snapshot.colorTheme;
 
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? (snapshot.systemDark ? "dark" : "light") : theme;
@@ -112,10 +141,19 @@ export function useTheme() {
     emitChange();
   }, []);
 
+  const setColorTheme = useCallback(
+    (next: string) => {
+      localStorage.setItem(COLOR_THEME_STORAGE_KEY, next);
+      applyTheme(theme, true);
+      emitChange();
+    },
+    [theme],
+  );
+
   // Keep DOM in sync on mount/change
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
-  return { theme, setTheme, resolvedTheme } as const;
+  return { theme, setTheme, resolvedTheme, colorTheme, setColorTheme } as const;
 }

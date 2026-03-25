@@ -1,0 +1,78 @@
+import type { ThemePreset } from "../types";
+
+// Catppuccin Mocha — warm, pastel dark theme
+// Palette: https://github.com/catppuccin/catppuccin
+// Base: #1e1e2e | Crust: #11111b | Mantle: #181825
+// Text: #cdd6f4 | Subtext0: #a6adc8 | Overlay1: #7f849c
+// Blue: #89b4fa | Mauve: #cba6f7 | Red: #f38ba8
+// Green: #a6e3a1 | Yellow: #f9e2af | Peach: #fab387
+
+export const catppuccinMocha: ThemePreset = {
+  id: "catppuccin-mocha",
+  name: "Catppuccin Mocha",
+  // Mocha is a dark-only theme; light variant uses Latte values for compatibility
+  light: {
+    background: "#eff1f5",
+    foreground: "#4c4f69",
+    card: "#e6e9ef",
+    "card-foreground": "#4c4f69",
+    popover: "#e6e9ef",
+    "popover-foreground": "#4c4f69",
+    primary: "#1e66f5",
+    "primary-foreground": "#eff1f5",
+    secondary: "rgba(76, 79, 105, 0.06)",
+    "secondary-foreground": "#4c4f69",
+    muted: "rgba(76, 79, 105, 0.06)",
+    "muted-foreground": "#6c6f85",
+    accent: "rgba(76, 79, 105, 0.06)",
+    "accent-foreground": "#4c4f69",
+    destructive: "#d20f39",
+    "destructive-foreground": "#a50c2e",
+    border: "rgba(76, 79, 105, 0.12)",
+    input: "rgba(76, 79, 105, 0.14)",
+    ring: "#1e66f5",
+    info: "#1e66f5",
+    "info-foreground": "#1e66f5",
+    success: "#40a02b",
+    "success-foreground": "#2d7a1e",
+    warning: "#df8e1d",
+    "warning-foreground": "#b07015",
+    sidebar: "#e6e9ef",
+    "sidebar-foreground": "#4c4f69",
+    "sidebar-border": "rgba(76, 79, 105, 0.12)",
+    "sidebar-accent": "rgba(76, 79, 105, 0.06)",
+    "sidebar-accent-foreground": "#4c4f69",
+  },
+  dark: {
+    background: "#1e1e2e",
+    foreground: "#cdd6f4",
+    card: "#181825",
+    "card-foreground": "#cdd6f4",
+    popover: "#181825",
+    "popover-foreground": "#cdd6f4",
+    primary: "#89b4fa",
+    "primary-foreground": "#1e1e2e",
+    secondary: "rgba(205, 214, 244, 0.06)",
+    "secondary-foreground": "#cdd6f4",
+    muted: "rgba(205, 214, 244, 0.06)",
+    "muted-foreground": "#a6adc8",
+    accent: "rgba(205, 214, 244, 0.06)",
+    "accent-foreground": "#cdd6f4",
+    destructive: "#f38ba8",
+    "destructive-foreground": "#f38ba8",
+    border: "rgba(205, 214, 244, 0.08)",
+    input: "rgba(205, 214, 244, 0.10)",
+    ring: "#89b4fa",
+    info: "#89b4fa",
+    "info-foreground": "#89dceb",
+    success: "#a6e3a1",
+    "success-foreground": "#a6e3a1",
+    warning: "#f9e2af",
+    "warning-foreground": "#f9e2af",
+    sidebar: "#181825",
+    "sidebar-foreground": "#cdd6f4",
+    "sidebar-border": "rgba(205, 214, 244, 0.08)",
+    "sidebar-accent": "rgba(205, 214, 244, 0.06)",
+    "sidebar-accent-foreground": "#cdd6f4",
+  },
+};

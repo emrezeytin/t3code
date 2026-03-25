@@ -1,0 +1,78 @@
+import type { ThemePreset } from "../types";
+
+// Dracula — dark theme with vivid purple accents
+// Palette: https://draculatheme.com/contribute
+// Background: #282a36 | Current Line: #44475a | Selection: #44475a
+// Foreground: #f8f8f2 | Comment: #6272a4
+// Cyan: #8be9fd | Green: #50fa7b | Orange: #ffb86c
+// Pink: #ff79c6 | Purple: #bd93f9 | Red: #ff5555 | Yellow: #f1fa8c
+
+export const dracula: ThemePreset = {
+  id: "dracula",
+  name: "Dracula",
+  // Light variant: a softened Dracula-inspired light theme
+  light: {
+    background: "#f8f8f2",
+    foreground: "#282a36",
+    card: "#f0f0ea",
+    "card-foreground": "#282a36",
+    popover: "#f0f0ea",
+    "popover-foreground": "#282a36",
+    primary: "#6d4ec7",
+    "primary-foreground": "#f8f8f2",
+    secondary: "rgba(40, 42, 54, 0.06)",
+    "secondary-foreground": "#282a36",
+    muted: "rgba(40, 42, 54, 0.06)",
+    "muted-foreground": "#6272a4",
+    accent: "rgba(40, 42, 54, 0.06)",
+    "accent-foreground": "#282a36",
+    destructive: "#cc4444",
+    "destructive-foreground": "#a83333",
+    border: "rgba(40, 42, 54, 0.10)",
+    input: "rgba(40, 42, 54, 0.12)",
+    ring: "#6d4ec7",
+    info: "#5b8fcc",
+    "info-foreground": "#4477bb",
+    success: "#3dba5e",
+    "success-foreground": "#2d9448",
+    warning: "#d4891a",
+    "warning-foreground": "#b06d10",
+    sidebar: "#f0f0ea",
+    "sidebar-foreground": "#282a36",
+    "sidebar-border": "rgba(40, 42, 54, 0.10)",
+    "sidebar-accent": "rgba(40, 42, 54, 0.06)",
+    "sidebar-accent-foreground": "#282a36",
+  },
+  dark: {
+    background: "#282a36",
+    foreground: "#f8f8f2",
+    card: "#21222c",
+    "card-foreground": "#f8f8f2",
+    popover: "#21222c",
+    "popover-foreground": "#f8f8f2",
+    primary: "#bd93f9",
+    "primary-foreground": "#282a36",
+    secondary: "rgba(248, 248, 242, 0.06)",
+    "secondary-foreground": "#f8f8f2",
+    muted: "rgba(248, 248, 242, 0.06)",
+    "muted-foreground": "#6272a4",
+    accent: "rgba(248, 248, 242, 0.06)",
+    "accent-foreground": "#f8f8f2",
+    destructive: "#ff5555",
+    "destructive-foreground": "#ff7777",
+    border: "rgba(248, 248, 242, 0.08)",
+    input: "rgba(248, 248, 242, 0.10)",
+    ring: "#bd93f9",
+    info: "#8be9fd",
+    "info-foreground": "#8be9fd",
+    success: "#50fa7b",
+    "success-foreground": "#50fa7b",
+    warning: "#ffb86c",
+    "warning-foreground": "#ffb86c",
+    sidebar: "#21222c",
+    "sidebar-foreground": "#f8f8f2",
+    "sidebar-border": "rgba(248, 248, 242, 0.08)",
+    "sidebar-accent": "rgba(248, 248, 242, 0.06)",
+    "sidebar-accent-foreground": "#f8f8f2",
+  },
+};

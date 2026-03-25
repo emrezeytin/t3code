@@ -1,0 +1,78 @@
+import type { ThemePreset } from "../types";
+
+// One Dark Pro — Atom's iconic dark theme
+// Palette: https://github.com/Binaryify/OneDark-Pro
+// Background: #282c34 | Lighter bg: #2c313c | Lightest bg: #3e4452
+// Foreground: #abb2bf | Comment: #5c6370
+// Red: #e06c75 | Orange: #d19a66 | Yellow: #e5c07b
+// Green: #98c379 | Cyan: #56b6c2 | Blue: #61afef | Purple: #c678dd
+
+export const oneDark: ThemePreset = {
+  id: "one-dark",
+  name: "One Dark",
+  // Light variant: One Light inspired
+  light: {
+    background: "#fafafa",
+    foreground: "#383a42",
+    card: "#f0f0f0",
+    "card-foreground": "#383a42",
+    popover: "#f0f0f0",
+    "popover-foreground": "#383a42",
+    primary: "#4078f2",
+    "primary-foreground": "#fafafa",
+    secondary: "rgba(56, 58, 66, 0.06)",
+    "secondary-foreground": "#383a42",
+    muted: "rgba(56, 58, 66, 0.06)",
+    "muted-foreground": "#717278",
+    accent: "rgba(56, 58, 66, 0.06)",
+    "accent-foreground": "#383a42",
+    destructive: "#ca1243",
+    "destructive-foreground": "#a50e36",
+    border: "rgba(56, 58, 66, 0.10)",
+    input: "rgba(56, 58, 66, 0.12)",
+    ring: "#4078f2",
+    info: "#4078f2",
+    "info-foreground": "#2c6bdb",
+    success: "#50a14f",
+    "success-foreground": "#3c7d3b",
+    warning: "#c18401",
+    "warning-foreground": "#9e6c01",
+    sidebar: "#f0f0f0",
+    "sidebar-foreground": "#383a42",
+    "sidebar-border": "rgba(56, 58, 66, 0.10)",
+    "sidebar-accent": "rgba(56, 58, 66, 0.06)",
+    "sidebar-accent-foreground": "#383a42",
+  },
+  dark: {
+    background: "#282c34",
+    foreground: "#abb2bf",
+    card: "#21252b",
+    "card-foreground": "#abb2bf",
+    popover: "#21252b",
+    "popover-foreground": "#abb2bf",
+    primary: "#61afef",
+    "primary-foreground": "#282c34",
+    secondary: "rgba(171, 178, 191, 0.06)",
+    "secondary-foreground": "#abb2bf",
+    muted: "rgba(171, 178, 191, 0.06)",
+    "muted-foreground": "#636d83",
+    accent: "rgba(171, 178, 191, 0.06)",
+    "accent-foreground": "#abb2bf",
+    destructive: "#e06c75",
+    "destructive-foreground": "#e8909a",
+    border: "rgba(171, 178, 191, 0.08)",
+    input: "rgba(171, 178, 191, 0.10)",
+    ring: "#61afef",
+    info: "#61afef",
+    "info-foreground": "#56b6c2",
+    success: "#98c379",
+    "success-foreground": "#98c379",
+    warning: "#e5c07b",
+    "warning-foreground": "#e5c07b",
+    sidebar: "#21252b",
+    "sidebar-foreground": "#abb2bf",
+    "sidebar-border": "rgba(171, 178, 191, 0.08)",
+    "sidebar-accent": "rgba(171, 178, 191, 0.06)",
+    "sidebar-accent-foreground": "#abb2bf",
+  },
+};

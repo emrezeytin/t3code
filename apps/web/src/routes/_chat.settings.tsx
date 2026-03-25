@@ -45,6 +45,7 @@ import KeybindingsEditor from "../components/KeybindingsEditor";
 import { resolveAndPersistPreferredEditor } from "../editorPreferences";
 import { isElectron } from "../env";
 import { useTheme } from "../hooks/useTheme";
+import { BUILT_IN_PRESETS } from "../themes/presets";
 import { serverConfigQueryOptions, serverQueryKeys } from "../lib/serverReactQuery";
 import { cn } from "../lib/utils";
 import { formatRelativeTime } from "../timestampFormat";
@@ -69,6 +70,11 @@ const THEME_OPTIONS = [
     description: "Always use the dark theme.",
   },
 ] as const;
+
+const COLOR_THEME_OPTIONS = BUILT_IN_PRESETS.map((preset) => ({
+  value: preset.id,
+  label: preset.name,
+}));
 
 const TIMESTAMP_FORMAT_LABELS = {
   locale: "System default",
@@ -285,7 +291,7 @@ function SettingResetButton({ label, onClick }: { label: string; onClick: () => 
 }
 
 function SettingsRouteView() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, colorTheme, setColorTheme } = useTheme();
   const settings = useSettings();
   const { updateSettings, resetSettings } = useUpdateSettings();
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
@@ -362,6 +368,7 @@ function SettingsRouteView() {
   );
   const changedSettingLabels = [
     ...(theme !== "system" ? ["Theme"] : []),
+    ...(colorTheme !== "default" ? ["Color theme"] : []),
     ...(settings.timestampFormat !== DEFAULT_UNIFIED_SETTINGS.timestampFormat
       ? ["Time format"]
       : []),
@@ -550,6 +557,7 @@ function SettingsRouteView() {
     if (!confirmed) return;
 
     setTheme("system");
+    setColorTheme("default");
     resetSettings();
     setOpenProviderDetails({
       codex: false,
@@ -630,6 +638,41 @@ function SettingsRouteView() {
                     </SelectTrigger>
                     <SelectPopup align="end" alignItemWithTrigger={false}>
                       {THEME_OPTIONS.map((option) => (
+                        <SelectItem hideIndicator key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectPopup>
+                  </Select>
+                }
+              />
+
+              <SettingsRow
+                title="Color theme"
+                description="Choose a color palette for the interface."
+                resetAction={
+                  colorTheme !== "default" ? (
+                    <SettingResetButton
+                      label="color theme"
+                      onClick={() => setColorTheme("default")}
+                    />
+                  ) : null
+                }
+                control={
+                  <Select
+                    value={colorTheme}
+                    onValueChange={(value) => {
+                      if (value !== null) setColorTheme(value);
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-40" aria-label="Color theme preference">
+                      <SelectValue>
+                        {COLOR_THEME_OPTIONS.find((option) => option.value === colorTheme)?.label ??
+                          "Default"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectPopup align="end" alignItemWithTrigger={false}>
+                      {COLOR_THEME_OPTIONS.map((option) => (
                         <SelectItem hideIndicator key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
