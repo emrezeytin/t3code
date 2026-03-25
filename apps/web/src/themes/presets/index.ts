@@ -7,6 +7,7 @@ import { dracula } from "./dracula";
 import { oneDark } from "./one-dark";
 import { solarizedDark } from "./solarized-dark";
 import { flexokiLight, flexokiDark } from "./flexoki";
+import { gruvboxDark, gruvboxLight } from "./gruvbox";
 
 export { defaultPreset };
 
@@ -20,6 +21,8 @@ export const BUILT_IN_PRESETS: ThemePreset[] = [
   solarizedDark,
   flexokiLight,
   flexokiDark,
+  gruvboxDark,
+  gruvboxLight,
 ];
 
 export function findPreset(id: string): ThemePreset | undefined {
