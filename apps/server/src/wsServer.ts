@@ -826,13 +826,29 @@ export const createServer = Effect.fn(function* (): Effect.fn.Return<
 
       case WS_METHODS.projectsListDirectory: {
         const body = stripRequestTag(request.body);
-        const target = yield* resolveWorkspaceWritePath({
-          workspaceRoot: body.cwd,
-          relativePath: body.relativePath,
-          path,
-        });
+        // Allow "." to list the project root — resolveWorkspaceWritePath intentionally
+        // rejects "." (it guards against writes to root), so we handle it specially here.
+        let listAbsolutePath: string;
+        let listRelativePath: string;
+        if (body.relativePath.trim() === ".") {
+          listAbsolutePath = body.cwd;
+          listRelativePath = ".";
+        } else {
+          const target = yield* resolveWorkspaceWritePath({
+            workspaceRoot: body.cwd,
+            relativePath: body.relativePath,
+            path,
+          });
+          listAbsolutePath = target.absolutePath;
+          listRelativePath = target.relativePath;
+        }
         const entries = yield* Effect.tryPromise({
-          try: () => listWorkspaceDirectory({ absolutePath: target.absolutePath, cwd: body.cwd, relativePath: target.relativePath }),
+          try: () =>
+            listWorkspaceDirectory({
+              absolutePath: listAbsolutePath,
+              cwd: body.cwd,
+              relativePath: listRelativePath,
+            }),
           catch: (cause) =>
             new RouteRequestError({
               message: `Failed to list directory: ${String(cause)}`,
