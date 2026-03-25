@@ -169,7 +169,9 @@ interface ClaudeQueryRuntime extends AsyncIterable<SDKMessage> {
   readonly setModel: (model?: string) => Promise<void>;
   readonly setPermissionMode: (mode: PermissionMode) => Promise<void>;
   readonly setMaxThinkingTokens: (maxThinkingTokens: number | null) => Promise<void>;
-  readonly supportedCommands: () => Promise<Array<{ name: string; description: string; argumentHint: string }>>;
+  readonly supportedCommands: () => Promise<
+    Array<{ name: string; description: string; argumentHint: string }>
+  >;
   readonly close: () => void;
 }
 

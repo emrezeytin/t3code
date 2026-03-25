@@ -26,6 +26,19 @@ import { providerQueryKeys } from "../lib/providerReactQuery";
 import { projectQueryKeys } from "../lib/projectReactQuery";
 import { collectActiveTerminalThreadIds } from "../lib/terminalStateCleanup";
 
+// ── Force sync ────────────────────────────────────────────────────────
+// Allows components (e.g. ChatView's sendPhase timeout) to trigger an
+// immediate snapshot sync from outside EventRouter.
+let forceSyncFn: (() => void) | null = null;
+
+/**
+ * Trigger an immediate snapshot sync. Used as a recovery mechanism when
+ * client-side state appears stale (e.g. sendPhase timeout).
+ */
+export function forceSyncSnapshot(): void {
+  forceSyncFn?.();
+}
+
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
 }>()({
@@ -314,10 +327,16 @@ function EventRouter() {
     });
     subscribed = true;
 
+    // Expose the sync function so components can trigger an immediate
+    // snapshot sync as a recovery mechanism (e.g. sendPhase timeout).
+    forceSyncFn = () => {
+      void syncSnapshot();
+    };
+
     // Safety-net: periodically re-sync state so that any events lost during
     // a brief WebSocket disconnect (or blocked by the backend lifecycle guard)
     // don't leave the UI stuck in a stale "running" state forever.
-    const STALE_SYNC_INTERVAL_MS = 30_000;
+    const STALE_SYNC_INTERVAL_MS = 10_000;
     const staleSyncTimer = setInterval(() => {
       if (!disposed) {
         void syncSnapshot();
@@ -327,6 +346,7 @@ function EventRouter() {
     return () => {
       disposed = true;
       needsProviderInvalidation = false;
+      forceSyncFn = null;
       domainEventFlushThrottler.cancel();
       clearInterval(staleSyncTimer);
       unsubDomainEvent();

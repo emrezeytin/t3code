@@ -179,6 +179,7 @@ import {
   SendPhase,
 } from "./ChatView.logic";
 import { useLocalStorage } from "~/hooks/useLocalStorage";
+import { forceSyncSnapshot } from "~/routes/__root";
 
 const ATTACHMENT_PREVIEW_HANDOFF_TTL_MS = 5000;
 const IMAGE_SIZE_LIMIT_LABEL = `${Math.round(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES / (1024 * 1024))}MB`;
@@ -1226,8 +1227,8 @@ export default function ChatView({ threadId }: ChatViewProps) {
         // Explicitly set both panel keys in every branch — retainSearchParams will
         // otherwise re-inject whichever key is currently present in the URL.
         return previous.diff === "1"
-          ? { ...rest, diff: undefined, filePanel: undefined }   // close diff
-          : { ...rest, diff: "1", filePanel: undefined };         // open diff, close filePanel
+          ? { ...rest, diff: undefined, filePanel: undefined } // close diff
+          : { ...rest, diff: "1", filePanel: undefined }; // open diff, close filePanel
       },
     });
   }, [navigate, threadId]);
@@ -1240,8 +1241,8 @@ export default function ChatView({ threadId }: ChatViewProps) {
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
         return previous.filePanel === "1"
-          ? { ...rest, diff: undefined, filePanel: undefined }   // close filePanel
-          : { ...rest, filePanel: "1", diff: undefined };         // open filePanel, close diff
+          ? { ...rest, diff: undefined, filePanel: undefined } // close filePanel
+          : { ...rest, filePanel: "1", diff: undefined }; // open filePanel, close diff
       },
     });
   }, [navigate, threadId]);
@@ -2213,7 +2214,15 @@ export default function ChatView({ threadId }: ChatViewProps) {
       phase === "running" ||
       activePendingApproval !== null ||
       activePendingUserInput !== null ||
-      activeThread?.error
+      activeThread?.error ||
+      // Also reset when the session exists (server acknowledged the turn) and
+      // has reached a settled state — covers the case where the turn completed
+      // or errored before we saw "running".
+      (activeThread?.session !== null &&
+        activeThread?.session !== undefined &&
+        (activeThread.session.status === "ready" ||
+          activeThread.session.status === "error" ||
+          activeThread.session.status === "closed"))
     ) {
       resetSendPhase();
     }
@@ -2221,10 +2230,42 @@ export default function ChatView({ threadId }: ChatViewProps) {
     activePendingApproval,
     activePendingUserInput,
     activeThread?.error,
+    activeThread?.session,
     phase,
     resetSendPhase,
     sendPhase,
   ]);
+
+  // Timeout safety-net: if sendPhase stays non-idle for too long, force-reset
+  // and surface an error. This catches all hang scenarios (lost domain events,
+  // failed snapshot syncs, server-side hangs) regardless of their root cause.
+  useEffect(() => {
+    if (sendPhase === "idle" || !sendStartedAt) return;
+
+    const startedAtMs = Date.parse(sendStartedAt);
+    if (!Number.isFinite(startedAtMs)) return;
+
+    const SEND_PHASE_TIMEOUT_MS = 45_000;
+    const elapsed = Date.now() - startedAtMs;
+    const remaining = SEND_PHASE_TIMEOUT_MS - elapsed;
+
+    if (remaining <= 0) {
+      forceSyncSnapshot();
+      resetSendPhase();
+      setThreadError(activeThreadId, "The request appears to have stalled. Please try again.");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      // Trigger a snapshot sync first — this gives the system one last chance
+      // to recover by fetching fresh state from the server.
+      forceSyncSnapshot();
+      resetSendPhase();
+      setThreadError(activeThreadId, "The request appears to have stalled. Please try again.");
+    }, remaining);
+
+    return () => window.clearTimeout(timer);
+  }, [activeThreadId, resetSendPhase, sendPhase, sendStartedAt, setThreadError]);
 
   useEffect(() => {
     if (!activeThreadId) return;
@@ -3585,7 +3626,13 @@ export default function ChatView({ threadId }: ChatViewProps) {
         search: (previous) => {
           const rest = stripDiffSearchParams(previous);
           return filePath
-            ? { ...rest, diff: "1", diffTurnId: turnId, diffFilePath: filePath, filePanel: undefined }
+            ? {
+                ...rest,
+                diff: "1",
+                diffTurnId: turnId,
+                diffFilePath: filePath,
+                filePanel: undefined,
+              }
             : { ...rest, diff: "1", diffTurnId: turnId, filePanel: undefined };
         },
       });

@@ -83,7 +83,13 @@ export interface CodeEditorProps {
   className?: string;
 }
 
-export function CodeEditor({ value, onChange, filename, readOnly = false, className }: CodeEditorProps) {
+export function CodeEditor({
+  value,
+  onChange,
+  filename,
+  readOnly = false,
+  className,
+}: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -151,10 +157,6 @@ export function CodeEditor({ value, onChange, filename, readOnly = false, classN
   }, [value]);
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ height: "100%", overflow: "hidden" }}
-    />
+    <div ref={containerRef} className={className} style={{ height: "100%", overflow: "hidden" }} />
   );
 }

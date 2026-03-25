@@ -11,9 +11,7 @@ import { FileTree } from "./FileTree";
 import { cn } from "~/lib/utils";
 import { isElectron } from "~/env";
 
-const CodeEditor = lazy(() =>
-  import("./CodeEditor").then((m) => ({ default: m.CodeEditor })),
-);
+const CodeEditor = lazy(() => import("./CodeEditor").then((m) => ({ default: m.CodeEditor })));
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -59,7 +57,10 @@ const EditorTabs = memo(function EditorTabs(props: {
           >
             <span className="max-w-[120px] truncate">{name}</span>
             {file.isDirty && (
-              <span className="size-1.5 shrink-0 rounded-full bg-blue-400" title="Unsaved changes" />
+              <span
+                className="size-1.5 shrink-0 rounded-full bg-blue-400"
+                title="Unsaved changes"
+              />
             )}
             <button
               type="button"
@@ -111,9 +112,7 @@ function ActiveFileEditor(props: {
 
 // ── Main panel ────────────────────────────────────────────────────────
 
-export const FileEditorPanel = memo(function FileEditorPanel({
-  onClose,
-}: FileEditorPanelProps) {
+export const FileEditorPanel = memo(function FileEditorPanel({ onClose }: FileEditorPanelProps) {
   const routeThreadId = useParams({
     strict: false,
     select: (params) => (params.threadId ? ThreadId.makeUnsafe(params.threadId) : null),
@@ -286,11 +285,7 @@ export const FileEditorPanel = memo(function FileEditorPanel({
         {/* File tree */}
         {treeVisible && (
           <div className="flex w-52 shrink-0 flex-col overflow-hidden border-r border-border bg-card/30">
-            <FileTree
-              cwd={cwd}
-              selectedPath={activePath}
-              onSelectFile={handleSelectFile}
-            />
+            <FileTree cwd={cwd} selectedPath={activePath} onSelectFile={handleSelectFile} />
           </div>
         )}
 
@@ -304,11 +299,7 @@ export const FileEditorPanel = memo(function FileEditorPanel({
           />
 
           {activeFile ? (
-            <ActiveFileEditor
-              cwd={cwd ?? ""}
-              file={activeFile}
-              onChange={handleChange}
-            />
+            <ActiveFileEditor cwd={cwd ?? ""} file={activeFile} onChange={handleChange} />
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
               <FolderTreeIcon className="size-8 text-muted-foreground/20" />

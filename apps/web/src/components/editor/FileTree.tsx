@@ -161,11 +161,7 @@ const FileNode = memo(function FileNode({
 
 // ── Root tree (lists the project root) ───────────────────────────────
 
-export const FileTree = memo(function FileTree({
-  cwd,
-  selectedPath,
-  onSelectFile,
-}: FileTreeProps) {
+export const FileTree = memo(function FileTree({ cwd, selectedPath, onSelectFile }: FileTreeProps) {
   const { resolvedTheme } = useTheme();
   const rootQuery = useQuery(
     projectListDirectoryQueryOptions({ cwd, relativePath: ".", enabled: cwd !== null }),

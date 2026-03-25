@@ -573,7 +573,8 @@ export async function listWorkspaceDirectory(params: {
     entries.push({
       path: entryRelativePath,
       kind: dirent.isDirectory() ? "directory" : "file",
-      parentPath: params.relativePath && params.relativePath !== "." ? params.relativePath : undefined,
+      parentPath:
+        params.relativePath && params.relativePath !== "." ? params.relativePath : undefined,
     });
   }
 

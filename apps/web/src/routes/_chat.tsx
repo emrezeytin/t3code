@@ -53,21 +53,14 @@ function ChatRouteGlobalShortcuts() {
 
       // mod+1 through mod+9: navigate to nth thread across all projects
       const digit = parseInt(event.key, 10);
-      if (
-        digit >= 1 &&
-        digit <= 9 &&
-        isModKeyPressed(event) &&
-        !event.shiftKey &&
-        !event.altKey
-      ) {
+      if (digit >= 1 && digit <= 9 && isModKeyPressed(event) && !event.shiftKey && !event.altKey) {
         // Collect all threads in sidebar display order (projects in order,
         // threads within each project sorted newest-first).
         const allThreadsInOrder = projects.flatMap((project) =>
           threads
             .filter((thread) => thread.projectId === project.id)
             .toSorted((a, b) => {
-              const byDate =
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              const byDate = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
               if (byDate !== 0) return byDate;
               return b.id.localeCompare(a.id);
             }),

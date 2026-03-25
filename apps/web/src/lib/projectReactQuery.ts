@@ -1,7 +1,4 @@
-import type {
-  ProjectListDirectoryResult,
-  ProjectSearchEntriesResult,
-} from "@t3tools/contracts";
+import type { ProjectListDirectoryResult, ProjectSearchEntriesResult } from "@t3tools/contracts";
 import { queryOptions } from "@tanstack/react-query";
 import { ensureNativeApi } from "~/nativeApi";
 
@@ -63,8 +60,7 @@ export function projectReadFileQueryOptions(input: {
       if (!input.cwd) throw new Error("File read is unavailable.");
       return api.projects.readFile({ cwd: input.cwd, relativePath: input.relativePath });
     },
-    enabled:
-      (input.enabled ?? true) && input.cwd !== null && input.relativePath.length > 0,
+    enabled: (input.enabled ?? true) && input.cwd !== null && input.relativePath.length > 0,
     staleTime: FILE_READ_STALE_TIME,
   });
 }

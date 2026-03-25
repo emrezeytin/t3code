@@ -43,7 +43,8 @@ export const defaultPreset: ThemePreset = {
     foreground: "var(--color-neutral-100)",
     card: "color-mix(in srgb, color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white)) 98%, var(--color-white))",
     "card-foreground": "var(--color-neutral-100)",
-    popover: "color-mix(in srgb, color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white)) 98%, var(--color-white))",
+    popover:
+      "color-mix(in srgb, color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white)) 98%, var(--color-white))",
     "popover-foreground": "var(--color-neutral-100)",
     primary: "oklch(0.588 0.217 264)",
     "primary-foreground": "var(--color-white)",
@@ -64,7 +65,8 @@ export const defaultPreset: ThemePreset = {
     "success-foreground": "var(--color-emerald-400)",
     warning: "var(--color-amber-500)",
     "warning-foreground": "var(--color-amber-400)",
-    sidebar: "color-mix(in srgb, color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white)) 98%, var(--color-white))",
+    sidebar:
+      "color-mix(in srgb, color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white)) 98%, var(--color-white))",
     "sidebar-foreground": "var(--color-neutral-100)",
     "sidebar-border": "--alpha(var(--color-white) / 6%)",
     "sidebar-accent": "--alpha(var(--color-white) / 4%)",

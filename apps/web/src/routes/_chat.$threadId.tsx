@@ -159,7 +159,9 @@ const RightPanelInlineSidebar = (props: {
         </div>
 
         {/* File editor content */}
-        <div className={activeTab === "files" && renderFilePanel ? "flex h-full flex-col" : "hidden"}>
+        <div
+          className={activeTab === "files" && renderFilePanel ? "flex h-full flex-col" : "hidden"}
+        >
           {renderFilePanel && <FileEditorPanel onClose={onClose} />}
         </div>
 

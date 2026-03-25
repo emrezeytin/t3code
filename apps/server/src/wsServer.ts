@@ -859,9 +859,9 @@ export const createServer = Effect.fn(function* (): Effect.fn.Return<
 
       case WS_METHODS.providerGetSkills: {
         const body = stripRequestTag(request.body);
-        const skills = yield* providerService.getSkills(body.threadId).pipe(
-          Effect.catch(() => Effect.succeed([] as const)),
-        );
+        const skills = yield* providerService
+          .getSkills(body.threadId)
+          .pipe(Effect.catch(() => Effect.succeed([] as const)));
         return { skills };
       }
 
