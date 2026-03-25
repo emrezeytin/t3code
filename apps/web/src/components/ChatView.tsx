@@ -1218,7 +1218,9 @@ export default function ChatView({ threadId }: ChatViewProps) {
       replace: true,
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return diffOpen ? { ...rest, diff: undefined } : { ...rest, diff: "1" };
+        return diffOpen
+          ? { ...rest, diff: undefined, filePanel: undefined }
+          : { ...rest, diff: "1", filePanel: undefined };
       },
     });
   }, [diffOpen, navigate, threadId]);
@@ -1230,7 +1232,9 @@ export default function ChatView({ threadId }: ChatViewProps) {
       replace: true,
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return filePanelOpen ? { ...rest, filePanel: undefined } : { ...rest, filePanel: "1" };
+        return filePanelOpen
+          ? { ...rest, diff: undefined, filePanel: undefined }
+          : { ...rest, diff: undefined, filePanel: "1" };
       },
     });
   }, [filePanelOpen, navigate, threadId]);
@@ -3567,8 +3571,8 @@ export default function ChatView({ threadId }: ChatViewProps) {
         search: (previous) => {
           const rest = stripDiffSearchParams(previous);
           return filePath
-            ? { ...rest, diff: "1", diffTurnId: turnId, diffFilePath: filePath }
-            : { ...rest, diff: "1", diffTurnId: turnId };
+            ? { ...rest, diff: "1", diffTurnId: turnId, diffFilePath: filePath, filePanel: undefined }
+            : { ...rest, diff: "1", diffTurnId: turnId, filePanel: undefined };
         },
       });
     },

@@ -209,7 +209,7 @@ function ChatThreadRouteView() {
       params: { threadId },
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return { ...rest, diff: "1" };
+        return { ...rest, diff: "1", filePanel: undefined };
       },
     });
   }, [navigate, threadId]);
@@ -220,7 +220,7 @@ function ChatThreadRouteView() {
       params: { threadId },
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return { ...rest, filePanel: "1" };
+        return { ...rest, filePanel: "1", diff: undefined };
       },
     });
   }, [navigate, threadId]);

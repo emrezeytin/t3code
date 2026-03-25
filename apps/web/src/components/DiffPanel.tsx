@@ -338,7 +338,7 @@ export default function DiffPanel({ mode = "inline" }: DiffPanelProps) {
       params: { threadId: activeThread.id },
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return { ...rest, diff: "1", diffTurnId: turnId };
+        return { ...rest, diff: "1", diffTurnId: turnId, filePanel: undefined };
       },
     });
   };
@@ -349,7 +349,7 @@ export default function DiffPanel({ mode = "inline" }: DiffPanelProps) {
       params: { threadId: activeThread.id },
       search: (previous) => {
         const rest = stripDiffSearchParams(previous);
-        return { ...rest, diff: "1" };
+        return { ...rest, diff: "1", filePanel: undefined };
       },
     });
   };
