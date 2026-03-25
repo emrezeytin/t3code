@@ -136,6 +136,12 @@ export const FileEditorPanel = memo(function FileEditorPanel({
 
   const activeFile = openFiles.find((f) => f.path === activePath) ?? null;
 
+  // Clear open tabs when the project root changes (switching projects)
+  useEffect(() => {
+    setOpenFiles([]);
+    setActivePath(null);
+  }, [cwd]);
+
   // ── Open file from tree click ─────────────────────────────────────
   const handleSelectFile = useCallback(
     async (relativePath: string) => {
