@@ -26,7 +26,7 @@ const RepoRoot = Effect.service(Path.Path).pipe(
 const ProductionMacIconSource = Effect.zipWith(
   RepoRoot,
   Effect.service(Path.Path),
-  (repoRoot, path) => path.join(repoRoot, BRAND_ASSET_PATHS.productionMacIconPng),
+  (repoRoot, path) => path.join(repoRoot, "assets/dev/blueprint-macos-1024.png"),
 );
 const ProductionLinuxIconSource = Effect.zipWith(
   RepoRoot,
