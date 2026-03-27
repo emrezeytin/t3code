@@ -210,6 +210,10 @@ export function buildLegacyClientSettingsMigrationPatch(
     patch.diffWordWrap = legacySettings.diffWordWrap;
   }
 
+  if (Predicate.isBoolean(legacySettings.editorWordWrap)) {
+    patch.editorWordWrap = legacySettings.editorWordWrap;
+  }
+
   if (Schema.is(SidebarProjectSortOrder)(legacySettings.sidebarProjectSortOrder)) {
     patch.sidebarProjectSortOrder = legacySettings.sidebarProjectSortOrder;
   }

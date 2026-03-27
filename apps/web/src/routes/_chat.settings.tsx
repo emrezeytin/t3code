@@ -375,6 +375,9 @@ function SettingsRouteView() {
     ...(settings.diffWordWrap !== DEFAULT_UNIFIED_SETTINGS.diffWordWrap
       ? ["Diff line wrapping"]
       : []),
+    ...(settings.editorWordWrap !== DEFAULT_UNIFIED_SETTINGS.editorWordWrap
+      ? ["Editor line wrapping"]
+      : []),
     ...(settings.enableAssistantStreaming !== DEFAULT_UNIFIED_SETTINGS.enableAssistantStreaming
       ? ["Assistant output"]
       : []),
@@ -751,6 +754,34 @@ function SettingsRouteView() {
                       })
                     }
                     aria-label="Wrap diff lines by default"
+                  />
+                }
+              />
+
+              <SettingsRow
+                title="Editor line wrapping"
+                description="Set the default wrap state when the file editor opens. The in-panel wrap toggle only affects the current editor session."
+                resetAction={
+                  settings.editorWordWrap !== DEFAULT_UNIFIED_SETTINGS.editorWordWrap ? (
+                    <SettingResetButton
+                      label="editor line wrapping"
+                      onClick={() =>
+                        updateSettings({
+                          editorWordWrap: DEFAULT_UNIFIED_SETTINGS.editorWordWrap,
+                        })
+                      }
+                    />
+                  ) : null
+                }
+                control={
+                  <Switch
+                    checked={settings.editorWordWrap}
+                    onCheckedChange={(checked) =>
+                      updateSettings({
+                        editorWordWrap: Boolean(checked),
+                      })
+                    }
+                    aria-label="Wrap editor lines by default"
                   />
                 }
               />

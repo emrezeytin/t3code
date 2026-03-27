@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ThreadId } from "@t3tools/contracts";
-import { XIcon, SaveIcon, FolderTreeIcon } from "lucide-react";
+import { XIcon, SaveIcon, FolderTreeIcon, TextWrapIcon } from "lucide-react";
 import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useStore } from "~/store";
 import { ensureNativeApi } from "~/nativeApi";
 import { projectQueryKeys, projectReadFileQueryOptions } from "~/lib/projectReactQuery";
+import { useSettings } from "~/hooks/useSettings";
 import { FileTree } from "./FileTree";
+import { Toggle } from "../ui/toggle-group";
 import { cn } from "~/lib/utils";
 import { isElectron } from "~/env";
 
@@ -81,9 +83,10 @@ const EditorTabs = memo(function EditorTabs(props: {
 function ActiveFileEditor(props: {
   cwd: string;
   file: OpenFile;
+  wordWrap: boolean;
   onChange: (path: string, content: string) => void;
 }) {
-  const { cwd, file, onChange } = props;
+  const { cwd, file, wordWrap, onChange } = props;
 
   // We loaded the initial content when opening — here we just render the editor
   return (
@@ -99,6 +102,7 @@ function ActiveFileEditor(props: {
           value={file.content}
           onChange={(value) => onChange(file.path, value)}
           filename={file.path}
+          wordWrap={wordWrap}
           className="h-full"
         />
       </Suspense>
@@ -124,9 +128,11 @@ export const FileEditorPanel = memo(function FileEditorPanel() {
   const cwd: string | null = activeThread?.worktreePath ?? activeProject?.cwd ?? null;
 
   // ── Open files state ──────────────────────────────────────────────
+  const settings = useSettings();
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
   const [activePath, setActivePath] = useState<string | null>(null);
   const [treeVisible, setTreeVisible] = useState(true);
+  const [editorWordWrap, setEditorWordWrap] = useState(settings.editorWordWrap);
   const queryClient = useQueryClient();
 
   const activeFile = openFiles.find((f) => f.path === activePath) ?? null;
@@ -253,6 +259,19 @@ export const FileEditorPanel = memo(function FileEditorPanel() {
           {activeFile ? activeFile.path : cwd ? "Files" : "No project"}
         </span>
 
+        <Toggle
+          aria-label={editorWordWrap ? "Disable line wrapping" : "Enable line wrapping"}
+          title={editorWordWrap ? "Disable line wrapping" : "Enable line wrapping"}
+          variant="outline"
+          size="xs"
+          pressed={editorWordWrap}
+          onPressedChange={(pressed) => {
+            setEditorWordWrap(Boolean(pressed));
+          }}
+        >
+          <TextWrapIcon className="size-3" />
+        </Toggle>
+
         {activeFile?.isDirty && (
           <button
             type="button"
@@ -286,7 +305,12 @@ export const FileEditorPanel = memo(function FileEditorPanel() {
           />
 
           {activeFile ? (
-            <ActiveFileEditor cwd={cwd ?? ""} file={activeFile} onChange={handleChange} />
+            <ActiveFileEditor
+              cwd={cwd ?? ""}
+              file={activeFile}
+              wordWrap={editorWordWrap}
+              onChange={handleChange}
+            />
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
               <FolderTreeIcon className="size-8 text-muted-foreground/20" />

@@ -109,7 +109,6 @@ const BASE_EXTENSIONS: Extension[] = [
   indentOnInput(),
   syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
   rectangularSelection(),
-  EditorView.lineWrapping,
   keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
   search({ top: false }),
   EditorView.theme({
@@ -154,6 +153,7 @@ export interface CodeEditorProps {
   onChange?: (value: string) => void;
   filename?: string;
   readOnly?: boolean;
+  wordWrap?: boolean;
   className?: string;
 }
 
@@ -162,6 +162,7 @@ export function CodeEditor({
   onChange,
   filename,
   readOnly = false,
+  wordWrap = true,
   className,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -169,15 +170,18 @@ export function CodeEditor({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Stable compartment instance for hot-swapping the color theme
+  // Stable compartment instances for hot-swapping extensions
   const themeCompartment = useRef(new Compartment()).current;
+  const wrapCompartment = useRef(new Compartment()).current;
 
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
-  // Use a ref so the async init closure always reads the latest value
+  // Use refs so the async init closure always reads the latest values
   const isDarkRef = useRef(isDark);
   isDarkRef.current = isDark;
+  const wordWrapRef = useRef(wordWrap);
+  wordWrapRef.current = wordWrap;
 
   // Create/destroy the editor when filename or readOnly changes
   useEffect(() => {
@@ -197,6 +201,7 @@ export function CodeEditor({
       const extensions: Extension[] = [
         ...BASE_EXTENSIONS,
         themeCompartment.of(getThemeExtension(isDarkRef.current)),
+        wrapCompartment.of(wordWrapRef.current ? EditorView.lineWrapping : []),
         updateListener,
         EditorState.readOnly.of(readOnly),
       ];
@@ -226,6 +231,15 @@ export function CodeEditor({
       effects: themeCompartment.reconfigure(getThemeExtension(isDark)),
     });
   }, [isDark, themeCompartment]);
+
+  // Hot-swap line wrapping when wordWrap prop changes
+  useEffect(() => {
+    const view = editorViewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: wrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []),
+    });
+  }, [wordWrap, wrapCompartment]);
 
   // Update content when value prop changes externally (e.g. after save refresh)
   useEffect(() => {
