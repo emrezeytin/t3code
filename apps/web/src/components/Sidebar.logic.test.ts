@@ -804,11 +804,7 @@ describe("groupThreadsByStatus", () => {
       { id: "c", status: makePill("Working") },
     ];
     const groups = groupThreadsByStatus(threads, (t) => t.status);
-    expect(groups.map((g) => g.displayLabel)).toEqual([
-      "Pending Approval",
-      "Working",
-      "Completed",
-    ]);
+    expect(groups.map((g) => g.displayLabel)).toEqual(["Pending Approval", "Working", "Completed"]);
   });
 
   it("puts threads without a status into the 'Other' group at the end", () => {

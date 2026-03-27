@@ -21,7 +21,6 @@ interface OpenFile {
   isDirty: boolean;
 }
 
-
 // ── Editor tab bar ────────────────────────────────────────────────────
 
 const EditorTabs = memo(function EditorTabs(props: {
@@ -266,7 +265,6 @@ export const FileEditorPanel = memo(function FileEditorPanel() {
             {saving ? "Saving…" : "Save"}
           </button>
         )}
-
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────── */}
